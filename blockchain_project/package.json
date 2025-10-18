@@ -18,7 +18,10 @@
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "setup": "prisma generate && prisma db push",
+    "dev:blockchain": "cd ../hardhat && pnpm hardhat node",
+    "deploy:contract": "cd ../hardhat && pnpm hardhat ignition deploy ./ignition/modules/CertificateRegistry.ts --network hardhatMainnet"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
@@ -28,12 +31,17 @@
     "@trpc/client": "^11.0.0",
     "@trpc/react-query": "^11.0.0",
     "@trpc/server": "^11.0.0",
+    "ethers": "^6.15.0",
+    "lucide-react": "^0.546.0",
     "next": "^15.2.3",
     "next-auth": "5.0.0-beta.25",
+    "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",
     "superjson": "^2.2.1",
+    "viem": "^2.38.3",
+    "wagmi": "^2.18.1",
     "zod": "^3.24.2"
   },
   "devDependencies": {

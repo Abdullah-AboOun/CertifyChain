@@ -1,35 +1,27 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { type DefaultSession, type NextAuthConfig } from "next-auth";
+import { type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyMessage } from "ethers";
 
-import { db } from "~/server/db";
-
-/**
- * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
- * object and keep type safety.
- *
- * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
- */
 declare module "next-auth" {
-  interface Session extends DefaultSession {
+  interface Session {
     user: {
       id: string;
       walletAddress?: string;
-    } & DefaultSession["user"];
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
   }
 
   interface User {
+    id: string;
     walletAddress?: string;
+    name?: string | null;
+    email?: string | null;
   }
 }
 
-/**
- * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
- *
- * @see https://next-auth.js.org/configuration/options
- */
-export const authConfig = {
+export const authOptions: NextAuthConfig = {
   providers: [
     CredentialsProvider({
       id: "ethereum",
@@ -58,25 +50,11 @@ export const authConfig = {
             return null;
           }
 
-          // Find or create user in database
-          let user = await db.user.findUnique({
-            where: { walletAddress: address.toLowerCase() },
-          });
-
-          if (!user) {
-            user = await db.user.create({
-              data: {
-                walletAddress: address.toLowerCase(),
-                name: address.slice(0, 6) + "..." + address.slice(-4),
-              },
-            });
-          }
-
+          // Return user object
           return {
-            id: user.id,
-            walletAddress: user.walletAddress ?? undefined,
-            name: user.name,
-            email: user.email,
+            id: address.toLowerCase(),
+            walletAddress: address.toLowerCase(),
+            name: address.slice(0, 6) + "..." + address.slice(-4),
           };
         } catch (error) {
           console.error("Error verifying signature:", error);
@@ -85,7 +63,6 @@ export const authConfig = {
       },
     }),
   ],
-  adapter: PrismaAdapter(db),
   session: {
     strategy: "jwt",
   },
@@ -98,14 +75,14 @@ export const authConfig = {
       return token;
     },
     async session({ session, token }) {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id as string,
-          walletAddress: token.walletAddress as string,
-        },
-      };
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.walletAddress = token.walletAddress as string;
+      }
+      return session;
     },
   },
-} satisfies NextAuthConfig;
+  pages: {
+    signIn: "/auth/signin",
+  },
+};
