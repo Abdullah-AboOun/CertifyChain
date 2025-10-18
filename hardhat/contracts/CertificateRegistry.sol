@@ -158,7 +158,14 @@ contract CertificateRegistry {
     /**
      * @dev Verify a certificate
      * @param _certificateId ID of the certificate
-     * @return Certificate data
+     * @return id Certificate ID
+     * @return certificateHash Hash of the certificate
+     * @return issuer Address of the issuer
+     * @return recipient Address of the recipient
+     * @return issuedAt Timestamp when issued
+     * @return isRevoked Whether the certificate is revoked
+     * @return metadata Additional metadata
+     * @return issuerName Name of the issuing entity
      */
     function verifyCertificate(uint256 _certificateId) 
         external 
@@ -211,6 +218,11 @@ contract CertificateRegistry {
     /**
      * @dev Get entity information
      * @param _entity Address of the entity
+     * @return entityAddress Address of the entity
+     * @return name Name of the entity
+     * @return isActive Whether the entity is active
+     * @return registeredAt Timestamp when registered
+     * @return certCount Number of certificates issued
      */
     function getEntityInfo(address _entity) 
         external 
