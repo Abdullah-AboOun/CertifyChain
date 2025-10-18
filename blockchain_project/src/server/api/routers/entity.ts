@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 export const entityRouter = createTRPCRouter({
   // Register a new entity
@@ -11,9 +15,18 @@ export const entityRouter = createTRPCRouter({
         description: z.string().optional(),
         blockchainId: z.number().optional(),
         transactionHash: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if entity already exists
+      const existing = await ctx.db.issuingEntity.findUnique({
+        where: { walletAddress: input.walletAddress },
+      });
+
+      if (existing) {
+        throw new Error("Entity with this wallet address already exists");
+      }
+
       return ctx.db.issuingEntity.create({
         data: {
           walletAddress: input.walletAddress,
@@ -59,7 +72,7 @@ export const entityRouter = createTRPCRouter({
         id: z.string(),
         name: z.string().optional(),
         description: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Ensure user owns this entity
@@ -89,7 +102,7 @@ export const entityRouter = createTRPCRouter({
       z.object({
         limit: z.number().min(1).max(100).default(10),
         cursor: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const entities = await ctx.db.issuingEntity.findMany({

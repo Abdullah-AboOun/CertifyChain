@@ -5,6 +5,16 @@ import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Shield, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent } from "~/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -12,13 +22,13 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="border-b bg-background">
+    <nav className="bg-background border-b">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2">
-              <Shield className="h-8 w-8 text-primary" />
+              <Shield className="text-primary h-8 w-8" />
               <span className="text-xl font-bold">CertifyChain</span>
             </Link>
           </div>
@@ -27,7 +37,7 @@ export function Navbar() {
           <div className="hidden md:flex md:items-center md:gap-6">
             <Link
               href="/verify"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
             >
               Verify Certificate
             </Link>
@@ -36,86 +46,83 @@ export function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
                 >
                   Dashboard
                 </Link>
-                <div className="relative group">
-                  <button className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      {session.user.walletAddress?.slice(0, 2).toUpperCase()}
-                    </div>
-                    <span className="max-w-[120px] truncate">
-                      {session.user.walletAddress
-                        ? `${session.user.walletAddress.slice(0, 6)}...${session.user.walletAddress.slice(-4)}`
-                        : "User"}
-                    </span>
-                  </button>
-                  <div className="absolute right-0 mt-2 hidden w-48 rounded-lg border bg-card p-2 shadow-lg group-hover:block">
-                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                      Connected Wallet
-                    </div>
-                    <div className="mb-2 px-3 py-1 text-sm font-mono">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <div className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-full">
+                        {session.user.walletAddress?.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="max-w-[120px] truncate">
+                        {session.user.walletAddress
+                          ? `${session.user.walletAddress.slice(0, 6)}...${session.user.walletAddress.slice(-4)}`
+                          : "User"}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel>Connected Wallet</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1.5 font-mono text-sm">
                       {session.user.walletAddress
                         ? `${session.user.walletAddress.slice(0, 8)}...${session.user.walletAddress.slice(-6)}`
                         : ""}
                     </div>
-                    <hr className="my-2" />
-                    <button
-                      onClick={() => signOut()}
-                      className="w-full rounded px-3 py-2 text-left text-sm hover:bg-accent"
-                    >
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()}>
                       Disconnect
-                    </button>
-                  </div>
-                </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
-              <Link
-                href="/auth/signin"
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-              >
-                Connect Wallet
-              </Link>
+              <Button asChild>
+                <Link href="/auth/signin">Connect Wallet</Link>
+              </Button>
             )}
 
             {/* Theme Toggle */}
-            <button
+            <Button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-lg border bg-card p-2 shadow-sm transition-colors hover:bg-accent"
+              variant="outline"
+              size="icon"
               aria-label="Toggle theme"
+              suppressHydrationWarning
             >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </Button>
           </div>
 
           {/* Mobile menu button */}
           <div className="flex items-center gap-2 md:hidden">
-            <button
+            <Button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-lg border bg-card p-2 shadow-sm transition-colors hover:bg-accent"
+              variant="outline"
+              size="icon"
               aria-label="Toggle theme"
+              suppressHydrationWarning
             >
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
-            <button
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </Button>
+            <Button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-lg border bg-card p-2 shadow-sm transition-colors hover:bg-accent"
+              variant="outline"
+              size="icon"
             >
               {mobileMenuOpen ? (
                 <X className="h-5 w-5" />
               ) : (
                 <Menu className="h-5 w-5" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -125,7 +132,7 @@ export function Navbar() {
             <div className="flex flex-col gap-4">
               <Link
                 href="/verify"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Verify Certificate
@@ -135,39 +142,43 @@ export function Navbar() {
                 <>
                   <Link
                     href="/dashboard"
-                    className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
                   </Link>
-                  <div className="flex flex-col gap-2 rounded-lg border bg-card p-4">
-                    <div className="text-xs text-muted-foreground">
-                      Connected Wallet
-                    </div>
-                    <div className="font-mono text-sm">
-                      {session.user.walletAddress
-                        ? `${session.user.walletAddress.slice(0, 8)}...${session.user.walletAddress.slice(-6)}`
-                        : ""}
-                    </div>
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="mt-2 rounded bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Disconnect
-                    </button>
-                  </div>
+                  <Card>
+                    <CardContent className="flex flex-col gap-2 pt-4">
+                      <div className="text-muted-foreground text-xs">
+                        Connected Wallet
+                      </div>
+                      <div className="font-mono text-sm">
+                        {session.user.walletAddress
+                          ? `${session.user.walletAddress.slice(0, 8)}...${session.user.walletAddress.slice(-6)}`
+                          : ""}
+                      </div>
+                      <Button
+                        onClick={() => {
+                          signOut();
+                          setMobileMenuOpen(false);
+                        }}
+                        variant="destructive"
+                        className="mt-2"
+                      >
+                        Disconnect
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </>
               ) : (
-                <Link
-                  href="/auth/signin"
-                  className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Connect Wallet
-                </Link>
+                <Button asChild className="w-full">
+                  <Link
+                    href="/auth/signin"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Connect Wallet
+                  </Link>
+                </Button>
               )}
             </div>
           </div>

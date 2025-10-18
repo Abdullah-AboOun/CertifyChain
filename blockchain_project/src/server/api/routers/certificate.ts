@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import { createHash } from "crypto";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 export const certificateRouter = createTRPCRouter({
   // Issue a new certificate
@@ -7,14 +12,13 @@ export const certificateRouter = createTRPCRouter({
     .input(
       z.object({
         blockchainId: z.number().optional(),
-        certificateHash: z.string(),
-        recipientAddress: z.string(),
-        recipientName: z.string().optional(),
-        metadata: z.string().optional(),
+        recipientName: z.string(),
+        recipientEmail: z.string().email().optional(),
+        description: z.string().optional(),
         documentUrl: z.string().optional(),
         transactionHash: z.string().optional(),
         issuerId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Verify the issuer belongs to the current user
@@ -29,13 +33,17 @@ export const certificateRouter = createTRPCRouter({
         throw new Error("Entity not found or unauthorized");
       }
 
+      // Generate certificate hash on server
+      const hashData = `${input.recipientName}|${input.recipientEmail || ''}|${entity.name}|${Date.now()}`;
+      const certificateHash = createHash('sha256').update(hashData).digest('hex');
+
       return ctx.db.certificate.create({
         data: {
           blockchainId: input.blockchainId,
-          certificateHash: input.certificateHash,
-          recipientAddress: input.recipientAddress,
+          certificateHash,
           recipientName: input.recipientName,
-          metadata: input.metadata,
+          recipientEmail: input.recipientEmail,
+          description: input.description,
           documentUrl: input.documentUrl,
           transactionHash: input.transactionHash,
           issuerId: input.issuerId,
@@ -105,7 +113,7 @@ export const certificateRouter = createTRPCRouter({
       z.object({
         id: z.number(),
         revokeTxHash: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Get the certificate
@@ -138,11 +146,11 @@ export const certificateRouter = createTRPCRouter({
     .input(
       z.object({
         query: z.string().optional(),
-        recipientAddress: z.string().optional(),
+        recipientEmail: z.string().optional(),
         isRevoked: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(10),
         cursor: z.number().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const certificates = await ctx.db.certificate.findMany({
@@ -150,14 +158,15 @@ export const certificateRouter = createTRPCRouter({
         cursor: input.cursor ? { id: input.cursor } : undefined,
         where: {
           AND: [
-            input.recipientAddress
-              ? { recipientAddress: input.recipientAddress }
+            input.recipientEmail
+              ? { recipientEmail: input.recipientEmail }
               : {},
             input.isRevoked !== undefined ? { isRevoked: input.isRevoked } : {},
             input.query
               ? {
                   OR: [
                     { recipientName: { contains: input.query } },
+                    { recipientEmail: { contains: input.query } },
                     { certificateHash: { contains: input.query } },
                   ],
                 }
@@ -187,7 +196,7 @@ export const certificateRouter = createTRPCRouter({
     .input(
       z.object({
         certificateHash: z.string(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       return ctx.db.certificate.findFirst({

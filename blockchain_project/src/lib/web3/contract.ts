@@ -1,17 +1,24 @@
-import { ethers } from 'ethers';
-import { CERTIFICATE_REGISTRY_ABI } from './contract-abi';
+import { ethers } from "ethers";
+import { CERTIFICATE_REGISTRY_ABI } from "./contract-abi";
 
 // Default to localhost Hardhat network
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
-export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545';
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
+export const RPC_URL =
+  process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545";
 
 export function getProvider() {
   return new ethers.JsonRpcProvider(RPC_URL);
 }
 
-export function getContract(signerOrProvider?: ethers.Signer | ethers.Provider) {
+export function getContract(
+  signerOrProvider?: ethers.Signer | ethers.Provider,
+) {
   const providerOrSigner = signerOrProvider || getProvider();
-  return new ethers.Contract(CONTRACT_ADDRESS, CERTIFICATE_REGISTRY_ABI, providerOrSigner);
+  return new ethers.Contract(
+    CONTRACT_ADDRESS,
+    CERTIFICATE_REGISTRY_ABI,
+    providerOrSigner,
+  );
 }
 
 export async function getSigner(provider: ethers.BrowserProvider) {
@@ -19,16 +26,16 @@ export async function getSigner(provider: ethers.BrowserProvider) {
 }
 
 export function getBrowserProvider() {
-  if (typeof window !== 'undefined' && window.ethereum) {
+  if (typeof window !== "undefined" && window.ethereum) {
     return new ethers.BrowserProvider(window.ethereum);
   }
-  throw new Error('No ethereum provider found');
+  throw new Error("No ethereum provider found");
 }
 
 // Helper functions
 export async function requestAccounts() {
-  if (typeof window !== 'undefined' && window.ethereum) {
-    return await window.ethereum.request({ method: 'eth_requestAccounts' });
+  if (typeof window !== "undefined" && window.ethereum) {
+    return await window.ethereum.request({ method: "eth_requestAccounts" });
   }
   return [];
 }
@@ -39,7 +46,7 @@ export async function getConnectedAccount(): Promise<string | null> {
     const signer = await provider.getSigner();
     return await signer.getAddress();
   } catch (error) {
-    console.error('Error getting connected account:', error);
+    console.error("Error getting connected account:", error);
     return null;
   }
 }
@@ -49,7 +56,7 @@ export async function registerEntity(name: string, fee: bigint) {
   const provider = getBrowserProvider();
   const signer = await getSigner(provider);
   const contract = getContract(signer);
-  
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tx = await (contract as any).registerEntity(name, { value: fee });
   return await tx.wait();
@@ -57,16 +64,19 @@ export async function registerEntity(name: string, fee: bigint) {
 
 export async function issueCertificate(
   certificateHash: string,
-  recipientAddress: string,
   metadata: string,
-  fee: bigint
+  fee: bigint,
 ) {
   const provider = getBrowserProvider();
   const signer = await getSigner(provider);
   const contract = getContract(signer);
-  
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tx = await (contract as any).issueCertificate(certificateHash, recipientAddress, metadata, { value: fee });
+  const tx = await (contract as any).issueCertificate(
+    certificateHash,
+    metadata,
+    { value: fee },
+  );
   return await tx.wait();
 }
 
@@ -74,7 +84,7 @@ export async function revokeCertificate(certificateId: number) {
   const provider = getBrowserProvider();
   const signer = await getSigner(provider);
   const contract = getContract(signer);
-  
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tx = await (contract as any).revokeCertificate(certificateId);
   return await tx.wait();
@@ -120,9 +130,15 @@ export async function getIssuanceFee(): Promise<bigint> {
 declare global {
   interface Window {
     ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      request: (args: {
+        method: string;
+        params?: unknown[];
+      }) => Promise<unknown>;
       on: (event: string, callback: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
+      removeListener: (
+        event: string,
+        callback: (...args: unknown[]) => void,
+      ) => void;
     };
   }
 }

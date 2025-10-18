@@ -39,10 +39,10 @@ model IssuingEntity {
 model Certificate {
     id                Int            @id @default(autoincrement())
     blockchainId      Int?           @unique // ID on the blockchain
-    certificateHash   String         // IPFS or document hash
-    recipientAddress  String
-    recipientName     String?
-    metadata          String?        // JSON metadata
+    certificateHash   String         @unique // Server-generated hash
+    recipientName     String
+    recipientEmail    String?
+    description       String?        // Optional description
     documentUrl       String?        // URL to certificate document
     
     issuedAt          DateTime       @default(now())
@@ -57,7 +57,7 @@ model Certificate {
     issuerId          String
     
     @@index([certificateHash])
-    @@index([recipientAddress])
+    @@index([recipientEmail])
     @@index([blockchainId])
 }
 
