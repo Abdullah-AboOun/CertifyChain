@@ -6,6 +6,8 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { Navbar } from "~/components/navbar";
+import { AuthProvider } from "~/components/auth-provider";
+import { auth } from "~/server/auth";
 
 export const metadata: Metadata = {
   title: "CertifyChain - Blockchain Certificate Management",
@@ -18,9 +20,11 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth();
+
   return (
     <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
       <body>
@@ -30,10 +34,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TRPCReactProvider>
-            <Navbar />
-            <main>{children}</main>
-          </TRPCReactProvider>
+          <AuthProvider session={session}>
+            <TRPCReactProvider>
+              <Navbar />
+              <main>{children}</main>
+            </TRPCReactProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
