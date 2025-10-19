@@ -13,7 +13,7 @@ export const certificateRouter = createTRPCRouter({
       z.object({
         blockchainId: z.string().optional(),
         recipientName: z.string(),
-        recipientEmail: z.string().email().optional(),
+        recipientEmail: z.string().email().optional().nullable(),
         description: z.string().optional(),
         documentUrl: z.string().optional(),
         transactionHash: z.string().optional(),

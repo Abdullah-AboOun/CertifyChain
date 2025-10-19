@@ -12,6 +12,8 @@ import {
   Loader2,
   Eye,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { api } from "~/trpc/react";
 import {
@@ -30,6 +32,13 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { Alert, AlertDescription } from "~/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -138,10 +147,27 @@ function NotRegisteredView({
     id: string;
     name: string;
     description: string | null;
+    organizationType: string | null;
+    country: string | null;
+    website: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    registrationNumber: string | null;
+    taxId: string | null;
   } | null;
 }) {
   const [entityName, setEntityName] = useState("");
   const [description, setDescription] = useState("");
+  const [organizationType, setOrganizationType] = useState("");
+  const [otherOrgType, setOtherOrgType] = useState("");
+  const [country, setCountry] = useState("");
+  const [website, setWebsite] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [taxId, setTaxId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registrationFee, setRegistrationFee] = useState<bigint | null>(null);
@@ -153,6 +179,14 @@ function NotRegisteredView({
     if (existingEntity) {
       setEntityName(existingEntity.name);
       setDescription(existingEntity.description || "");
+      setOrganizationType(existingEntity.organizationType || "");
+      setCountry(existingEntity.country || "");
+      setWebsite(existingEntity.website || "");
+      setEmail(existingEntity.email || "");
+      setPhone(existingEntity.phone || "");
+      setAddress(existingEntity.address || "");
+      setRegistrationNumber(existingEntity.registrationNumber || "");
+      setTaxId(existingEntity.taxId || "");
     }
   }, [existingEntity]);
 
@@ -165,9 +199,34 @@ function NotRegisteredView({
   }, []);
 
   const handleRegister = async () => {
+    // Validate all fields BEFORE prompting for payment
     if (!entityName.trim()) {
       setError("Please enter an entity name");
       return;
+    }
+
+    if (organizationType === "other" && !otherOrgType.trim()) {
+      setError("Please specify your organization type");
+      return;
+    }
+
+    // Validate email format if provided
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setError("Please enter a valid email address or leave it empty");
+        return;
+      }
+    }
+
+    // Validate website URL format if provided
+    if (website.trim()) {
+      try {
+        new URL(website.trim());
+      } catch {
+        setError("Please enter a valid website URL (e.g., https://example.com) or leave it empty");
+        return;
+      }
     }
 
     if (!registrationFee) {
@@ -192,10 +251,21 @@ function NotRegisteredView({
 
       // Register in database only if not already exists
       if (!existingEntity) {
+        // Use "Other" text if organization type is "other"
+        const finalOrgType = organizationType === "other" ? otherOrgType : organizationType;
+        
         await registerMutation.mutateAsync({
           walletAddress,
           name: entityName,
-          description: description || undefined,
+          description: description.trim() || undefined,
+          organizationType: finalOrgType?.trim() || undefined,
+          country: country.trim() || undefined,
+          website: website.trim() || undefined,
+          email: email.trim() || undefined,
+          phone: phone.trim() || undefined,
+          address: address.trim() || undefined,
+          registrationNumber: registrationNumber.trim() || undefined,
+          taxId: taxId.trim() || undefined,
           transactionHash: txHash,
         });
       }
@@ -205,8 +275,26 @@ function NotRegisteredView({
     } catch (err: any) {
       console.error("Registration error:", err);
       
+      // Handle validation errors from tRPC
+      if (err?.data?.zodError) {
+        const zodError = err.data.zodError;
+        const fieldErrors = zodError.fieldErrors || {};
+        
+        // Extract first error message
+        if (fieldErrors.website) {
+          setError("Please enter a valid website URL (e.g., https://example.com) or leave it empty.");
+        } else if (fieldErrors.email) {
+          setError("Please enter a valid email address or leave it empty.");
+        } else {
+          // Generic validation error
+          const firstErrorField = Object.keys(fieldErrors)[0];
+          const firstErrorMessages = fieldErrors[firstErrorField as keyof typeof fieldErrors];
+          const errorMessage = Array.isArray(firstErrorMessages) ? firstErrorMessages[0] : "Please check your input.";
+          setError(`Validation error: ${errorMessage}`);
+        }
+      }
       // Check if the error is from blockchain (already registered)
-      if (err?.message?.includes("already registered")) {
+      else if (err?.message?.includes("already registered")) {
         // Try to just sync the database
         try {
           if (!existingEntity) {
@@ -223,6 +311,8 @@ function NotRegisteredView({
         }
       } else if (err?.code === "CALL_EXCEPTION") {
         setError("Failed to connect to blockchain. Please check your connection and try again.");
+      } else if (err?.message) {
+        setError(`Registration failed: ${err.message}`);
       } else {
         setError("Failed to register entity. Please try again.");
       }
@@ -262,25 +352,153 @@ function NotRegisteredView({
           </Button>
         ) : (
           <div className="space-y-4 text-left">
-            <div className="space-y-2">
-              <Label htmlFor="entityName">Entity Name *</Label>
-              <Input
-                id="entityName"
-                value={entityName}
-                onChange={(e) => setEntityName(e.target.value)}
-                placeholder="e.g., University of Example"
-              />
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm">Basic Information</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="entityName">Organization Name *</Label>
+                <Input
+                  id="entityName"
+                  value={entityName}
+                  onChange={(e) => setEntityName(e.target.value)}
+                  placeholder="e.g., University of Example"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="organizationType">Organization Type</Label>
+                <Select value={organizationType} onValueChange={setOrganizationType}>
+                  <SelectTrigger id="organizationType">
+                    <SelectValue placeholder="Select organization type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="university">University</SelectItem>
+                    <SelectItem value="college">College</SelectItem>
+                    <SelectItem value="school">School</SelectItem>
+                    <SelectItem value="company">Company</SelectItem>
+                    <SelectItem value="corporation">Corporation</SelectItem>
+                    <SelectItem value="government">Government Agency</SelectItem>
+                    <SelectItem value="non-profit">Non-Profit Organization</SelectItem>
+                    <SelectItem value="ngo">NGO</SelectItem>
+                    <SelectItem value="healthcare">Healthcare Institution</SelectItem>
+                    <SelectItem value="training">Training Institute</SelectItem>
+                    <SelectItem value="certification">Certification Body</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {organizationType === "other" && (
+                <div className="space-y-2">
+                  <Label htmlFor="otherOrgType">Specify Organization Type *</Label>
+                  <Input
+                    id="otherOrgType"
+                    value={otherOrgType}
+                    onChange={(e) => setOtherOrgType(e.target.value)}
+                    placeholder="Please specify your organization type"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief description of your organization"
+                  rows={3}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of your organization"
-                rows={3}
-              />
+            {/* Contact Information */}
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="font-semibold text-sm">Contact Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="contact@example.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="website">Website</Label>
+                <Input
+                  id="website"
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://www.example.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Physical Address</Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Street address, City, State/Province, Postal Code"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  placeholder="e.g., United States"
+                />
+              </div>
+            </div>
+
+            {/* Legal Information */}
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="font-semibold text-sm">Legal Information (Optional)</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="registrationNumber">Registration Number</Label>
+                  <Input
+                    id="registrationNumber"
+                    value={registrationNumber}
+                    onChange={(e) => setRegistrationNumber(e.target.value)}
+                    placeholder="Business registration number"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="taxId">Tax ID / VAT Number</Label>
+                  <Input
+                    id="taxId"
+                    value={taxId}
+                    onChange={(e) => setTaxId(e.target.value)}
+                    placeholder="Tax identification number"
+                  />
+                </div>
+              </div>
             </div>
 
             {registrationFee && (
@@ -334,20 +552,83 @@ function RegisteredView({
 }) {
   const { data: certificates, refetch } = api.certificate.getMy.useQuery();
 
+  const [showEntityDetails, setShowEntityDetails] = useState(false);
+
   return (
     <div className="space-y-6">
       {/* Entity Info */}
-      <Card>
+      <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setShowEntityDetails(!showEntityDetails)}>
         <CardContent className="pt-6">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">{entity?.name || "Entity"}</h2>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold">{entity?.name || "Entity"}</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowEntityDetails(!showEntityDetails);
+                  }}
+                >
+                  {showEntityDetails ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
               {entity?.description && (
                 <p className="text-muted-foreground mt-1">{entity.description}</p>
               )}
-              <p className="text-muted-foreground mt-2 font-mono text-sm">
-                {entity?.walletAddress}
-              </p>
+              
+              {showEntityDetails && (
+                <div className="mt-4 space-y-2 border-t pt-4">
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Wallet Address</Label>
+                    <p className="font-mono text-sm break-all">{entity?.walletAddress}</p>
+                  </div>
+                  {entity?.organizationType && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Organization Type</Label>
+                      <p className="text-sm">{entity.organizationType}</p>
+                    </div>
+                  )}
+                  {entity?.email && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Email</Label>
+                      <p className="text-sm">{entity.email}</p>
+                    </div>
+                  )}
+                  {entity?.phone && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Phone</Label>
+                      <p className="text-sm">{entity.phone}</p>
+                    </div>
+                  )}
+                  {entity?.website && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Website</Label>
+                      <a href={entity.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                        {entity.website}
+                      </a>
+                    </div>
+                  )}
+                  {entity?.country && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Country</Label>
+                      <p className="text-sm">{entity.country}</p>
+                    </div>
+                  )}
+                  {entity?.address && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">Address</Label>
+                      <p className="text-sm whitespace-pre-line">{entity.address}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-1 text-sm font-medium text-green-500">
               <CheckCircle className="h-4 w-4" />
@@ -439,9 +720,19 @@ function IssueCertificateForm({
   };
 
   const handleIssue = async () => {
+    // Validate required fields
     if (!recipientName.trim()) {
       setError("Please enter recipient name");
       return;
+    }
+
+    // Validate email format if provided
+    if (recipientEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(recipientEmail.trim())) {
+        setError("Please enter a valid email address or leave it empty");
+        return;
+      }
     }
 
     if (!issuanceFee) {
@@ -475,9 +766,9 @@ function IssueCertificateForm({
 
       // Save to database with image URL to generate hash
       const certificate = await issueMutation.mutateAsync({
-        recipientName,
-        recipientEmail: recipientEmail.trim() ? recipientEmail.trim() : undefined,
-        description: description.trim() ? description.trim() : undefined,
+        recipientName: recipientName.trim(),
+        recipientEmail: recipientEmail.trim() || undefined,
+        description: description.trim() || undefined,
         documentUrl,
         issuerId: entityId,
       });
@@ -503,9 +794,29 @@ function IssueCertificateForm({
       }
 
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Issue error:", err);
-      setError("Failed to issue certificate. Please try again.");
+      
+      // Handle validation errors from tRPC
+      if (err?.data?.zodError) {
+        const zodError = err.data.zodError;
+        const fieldErrors = zodError.fieldErrors || {};
+        
+        if (fieldErrors.recipientEmail) {
+          setError("Please enter a valid email address or leave it empty.");
+        } else {
+          const firstErrorField = Object.keys(fieldErrors)[0];
+          const firstErrorMessages = fieldErrors[firstErrorField as keyof typeof fieldErrors];
+          const errorMessage = Array.isArray(firstErrorMessages) ? firstErrorMessages[0] : "Please check your input.";
+          setError(`Validation error: ${errorMessage}`);
+        }
+      } else if (err?.code === "CALL_EXCEPTION") {
+        setError("Failed to connect to blockchain. Please check your connection and try again.");
+      } else if (err?.message) {
+        setError(`Failed to issue certificate: ${err.message}`);
+      } else {
+        setError("Failed to issue certificate. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

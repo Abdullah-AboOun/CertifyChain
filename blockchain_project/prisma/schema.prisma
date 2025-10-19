@@ -20,6 +20,19 @@ model IssuingEntity {
     walletAddress     String        @unique
     name              String
     description       String?
+    
+    // Organization Details
+    organizationType  String?       // e.g., "University", "Company", "Government", "Non-profit"
+    country           String?
+    website           String?
+    email             String?
+    phone             String?
+    address           String?       // Physical address
+    
+    // Legal/Registration Info
+    registrationNumber String?      // Business/organization registration number
+    taxId             String?       // Tax ID or VAT number
+    
     isActive          Boolean       @default(true)
     registeredAt      DateTime      @default(now())
     updatedAt         DateTime      @updatedAt
@@ -33,6 +46,7 @@ model IssuingEntity {
     userId            String?
     
     @@index([walletAddress])
+    @@index([email])
 }
 
 // Certificate Model
