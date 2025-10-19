@@ -63,8 +63,6 @@ pnpm prisma generate && pnpm prisma db push
 pnpm dev
 ```
 
-## 📱 Usage
-
 ## � Usage
 
 ### Setup MetaMask
