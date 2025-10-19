@@ -15,7 +15,16 @@ export const entityRouter = createTRPCRouter({
         description: z.string().optional(),
         organizationType: z.string().optional(),
         country: z.string().optional(),
-        website: z.string().url().optional().nullable(),
+        website: z
+          .string()
+          .transform((val) => {
+            if (!val) return val;
+            // Add https:// if no protocol specified
+            return val.match(/^https?:\/\//) ? val : `https://${val}`;
+          })
+          .pipe(z.string().url())
+          .optional()
+          .nullable(),
         email: z.string().email().optional().nullable(),
         phone: z.string().optional(),
         address: z.string().optional(),
@@ -42,8 +51,8 @@ export const entityRouter = createTRPCRouter({
           description: input.description,
           organizationType: input.organizationType,
           country: input.country,
-          website: input.website || undefined,
-          email: input.email || undefined,
+          website: input.website ?? undefined,
+          email: input.email ?? undefined,
           phone: input.phone,
           address: input.address,
           registrationNumber: input.registrationNumber,

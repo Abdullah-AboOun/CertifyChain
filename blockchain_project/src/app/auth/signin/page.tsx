@@ -7,13 +7,7 @@ import { Shield, Wallet } from "lucide-react";
 import { getBrowserProvider, requestAccounts } from "~/lib/web3/contract";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription } from "~/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 
 export default function SignInPage() {
   const [loading, setLoading] = useState(false);
@@ -28,7 +22,7 @@ export default function SignInPage() {
       // Request wallet connection
       const accounts = (await requestAccounts()) as string[];
 
-      if (!accounts || accounts.length === 0) {
+      if (!accounts?.length) {
         setError(
           "No wallet accounts found. Please install MetaMask or another Web3 wallet.",
         );

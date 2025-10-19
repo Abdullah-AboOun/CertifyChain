@@ -97,19 +97,6 @@ export const CERTIFICATE_REGISTRY_ABI = [
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "certificateCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "string",

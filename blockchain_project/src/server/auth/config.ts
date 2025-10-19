@@ -63,14 +63,12 @@ export const authConfig = {
             where: { walletAddress: address.toLowerCase() },
           });
 
-          if (!user) {
-            user = await db.user.create({
-              data: {
-                walletAddress: address.toLowerCase(),
-                name: address.slice(0, 6) + "..." + address.slice(-4),
-              },
-            });
-          }
+          user ??= await db.user.create({
+            data: {
+              walletAddress: address.toLowerCase(),
+              name: address.slice(0, 6) + "..." + address.slice(-4),
+            },
+          });
 
           return {
             id: user.id,

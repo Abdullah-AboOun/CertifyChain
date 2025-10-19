@@ -2,9 +2,9 @@ import { ethers } from "ethers";
 import { CERTIFICATE_REGISTRY_ABI } from "./contract-abi";
 
 // Default to localhost Hardhat network
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ?? "";
 export const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8545";
+  process.env.NEXT_PUBLIC_RPC_URL ?? "http://localhost:8545";
 
 export function getProvider() {
   return new ethers.JsonRpcProvider(RPC_URL);
@@ -13,7 +13,7 @@ export function getProvider() {
 export function getContract(
   signerOrProvider?: ethers.Signer | ethers.Provider,
 ) {
-  const providerOrSigner = signerOrProvider || getProvider();
+  const providerOrSigner = signerOrProvider ?? getProvider();
   return new ethers.Contract(
     CONTRACT_ADDRESS,
     CERTIFICATE_REGISTRY_ABI,

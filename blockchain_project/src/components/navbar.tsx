@@ -159,7 +159,7 @@ export function Navbar() {
                       </div>
                       <Button
                         onClick={() => {
-                          signOut();
+                          void signOut();
                           setMobileMenuOpen(false);
                         }}
                         variant="destructive"

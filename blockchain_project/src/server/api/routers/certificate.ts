@@ -34,7 +34,7 @@ export const certificateRouter = createTRPCRouter({
       }
 
       // Generate certificate hash on server
-      const hashData = `${input.recipientName}|${input.recipientEmail || ''}|${entity.name}|${Date.now()}`;
+      const hashData = `${input.recipientName}|${input.recipientEmail ?? ''}|${entity.name}|${Date.now()}`;
       const certificateHash = createHash('sha256').update(hashData).digest('hex');
 
       return ctx.db.certificate.create({

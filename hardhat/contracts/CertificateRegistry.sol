@@ -30,7 +30,6 @@ contract CertificateRegistry {
     address public owner;
     uint256 public registrationFee;
     uint256 public certificateIssuanceFee;
-    uint256 public certificateCount;
     
     // Mappings
     mapping(bytes32 => Certificate) public certificates;
@@ -71,7 +70,6 @@ contract CertificateRegistry {
         owner = msg.sender;
         registrationFee = _registrationFee;
         certificateIssuanceFee = _certificateIssuanceFee;
-        certificateCount = 0;
     }
     
     /**
@@ -111,9 +109,7 @@ contract CertificateRegistry {
         require(certificateHashToId[_certificateHash] == bytes32(0), "Certificate hash already used");
         
         // Generate unique certificate ID from hash, issuer, and timestamp
-        bytes32 certificateId = keccak256(abi.encodePacked(_certificateHash, msg.sender, block.timestamp, certificateCount));
-        
-        certificateCount++;
+        bytes32 certificateId = keccak256(abi.encodePacked(_certificateHash, msg.sender, block.timestamp));
         
         certificates[certificateId] = Certificate({
             id: certificateId,
@@ -211,7 +207,4 @@ contract CertificateRegistry {
     function getEntityCertificates(address _entity) external view returns (bytes32[] memory) {
         return entityCertificates[_entity];
     }
-    
-    
-
 }

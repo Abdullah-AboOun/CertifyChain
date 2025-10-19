@@ -23,7 +23,6 @@ import {
   issueCertificate,
   getIssuanceFee,
   revokeCertificate,
-  getEntityCertificates,
 } from "~/lib/web3/contract";
 import { ethers } from "ethers";
 import { Button } from "~/components/ui/button";
@@ -178,15 +177,15 @@ function NotRegisteredView({
   useEffect(() => {
     if (existingEntity) {
       setEntityName(existingEntity.name);
-      setDescription(existingEntity.description || "");
-      setOrganizationType(existingEntity.organizationType || "");
-      setCountry(existingEntity.country || "");
-      setWebsite(existingEntity.website || "");
-      setEmail(existingEntity.email || "");
-      setPhone(existingEntity.phone || "");
-      setAddress(existingEntity.address || "");
-      setRegistrationNumber(existingEntity.registrationNumber || "");
-      setTaxId(existingEntity.taxId || "");
+      setDescription(existingEntity.description ?? "");
+      setOrganizationType(existingEntity.organizationType ?? "");
+      setCountry(existingEntity.country ?? "");
+      setWebsite(existingEntity.website ?? "");
+      setEmail(existingEntity.email ?? "");
+      setPhone(existingEntity.phone ?? "");
+      setAddress(existingEntity.address ?? "");
+      setRegistrationNumber(existingEntity.registrationNumber ?? "");
+      setTaxId(existingEntity.taxId ?? "");
     }
   }, [existingEntity]);
 
@@ -222,9 +221,13 @@ function NotRegisteredView({
     // Validate website URL format if provided
     if (website.trim()) {
       try {
-        new URL(website.trim());
+        // Add https:// if no protocol specified
+        const urlToValidate = website.trim().match(/^https?:\/\//) 
+          ? website.trim() 
+          : `https://${website.trim()}`;
+        new URL(urlToValidate);
       } catch {
-        setError("Please enter a valid website URL (e.g., https://example.com) or leave it empty");
+        setError("Please enter a valid website URL (e.g., example.com or https://example.com) or leave it empty");
         return;
       }
     }
@@ -272,17 +275,18 @@ function NotRegisteredView({
 
       onSuccess();
       setShowForm(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Registration error:", err);
       
       // Handle validation errors from tRPC
-      if (err?.data?.zodError) {
-        const zodError = err.data.zodError;
-        const fieldErrors = zodError.fieldErrors || {};
+      if (err && typeof err === 'object' && 'data' in err) {
+        const errorData = err.data as any;
+        const zodError = errorData?.zodError;
+        const fieldErrors = zodError?.fieldErrors ?? {};
         
         // Extract first error message
         if (fieldErrors.website) {
-          setError("Please enter a valid website URL (e.g., https://example.com) or leave it empty.");
+          setError("Please enter a valid website URL (e.g., example.com or https://example.com) or leave it empty.");
         } else if (fieldErrors.email) {
           setError("Please enter a valid email address or leave it empty.");
         } else {
@@ -294,7 +298,7 @@ function NotRegisteredView({
         }
       }
       // Check if the error is from blockchain (already registered)
-      else if (err?.message?.includes("already registered")) {
+      else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message.includes("already registered")) {
         // Try to just sync the database
         try {
           if (!existingEntity) {
@@ -306,12 +310,12 @@ function NotRegisteredView({
           }
           onSuccess();
           setShowForm(false);
-        } catch (dbErr) {
+        } catch {
           setError("Entity already registered. Please refresh the page.");
         }
-      } else if (err?.code === "CALL_EXCEPTION") {
+      } else if (err && typeof err === 'object' && 'code' in err && err.code === "CALL_EXCEPTION") {
         setError("Failed to connect to blockchain. Please check your connection and try again.");
-      } else if (err?.message) {
+      } else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
         setError(`Registration failed: ${err.message}`);
       } else {
         setError("Failed to register entity. Please try again.");
@@ -448,7 +452,7 @@ function NotRegisteredView({
                   type="url"
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://www.example.com"
+                  placeholder="example.com or https://example.com"
                 />
               </div>
 
@@ -546,7 +550,20 @@ function RegisteredView({
   showIssueForm,
   setShowIssueForm,
 }: {
-  entity: any;
+  entity: {
+    id: string;
+    name: string;
+    description: string | null;
+    organizationType: string | null;
+    country: string | null;
+    website: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    registrationNumber: string | null;
+    taxId: string | null;
+    walletAddress: string;
+  } | null | undefined;
   showIssueForm: boolean;
   setShowIssueForm: (show: boolean) => void;
 }) {
@@ -562,7 +579,7 @@ function RegisteredView({
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold">{entity?.name || "Entity"}</h2>
+                <h2 className="text-2xl font-bold">{entity?.name ?? "Entity"}</h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -610,7 +627,12 @@ function RegisteredView({
                   {entity?.website && (
                     <div>
                       <Label className="text-muted-foreground text-xs">Website</Label>
-                      <a href={entity.website} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                      <a 
+                        href={entity.website.startsWith('http') ? entity.website : `https://${entity.website}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-sm text-primary hover:underline"
+                      >
                         {entity.website}
                       </a>
                     </div>
@@ -651,9 +673,9 @@ function RegisteredView({
       </div>
 
       {/* Issue Form */}
-      {showIssueForm && (
+      {showIssueForm && entity?.id && (
         <IssueCertificateForm
-          entityId={entity?.id}
+          entityId={entity.id}
           onSuccess={() => {
             setShowIssueForm(false);
             void refetch();
@@ -760,7 +782,7 @@ function IssueCertificateForm({
           throw new Error("Failed to upload certificate image");
         }
 
-        const uploadData = await uploadResponse.json();
+        const uploadData = (await uploadResponse.json()) as { url: string };
         documentUrl = uploadData.url;
       }
 
@@ -777,7 +799,7 @@ function IssueCertificateForm({
       // No recipient address needed - certificate data stored in database
       const receipt = await issueCertificate(
         certificate.certificateHash,
-        description || "",
+        description ?? "",
         issuanceFee,
       );
 
@@ -794,13 +816,14 @@ function IssueCertificateForm({
       }
 
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Issue error:", err);
       
       // Handle validation errors from tRPC
-      if (err?.data?.zodError) {
-        const zodError = err.data.zodError;
-        const fieldErrors = zodError.fieldErrors || {};
+      if (err && typeof err === 'object' && 'data' in err) {
+        const errorData = err.data as any;
+        const zodError = errorData?.zodError;
+        const fieldErrors = zodError?.fieldErrors ?? {};
         
         if (fieldErrors.recipientEmail) {
           setError("Please enter a valid email address or leave it empty.");
@@ -810,9 +833,9 @@ function IssueCertificateForm({
           const errorMessage = Array.isArray(firstErrorMessages) ? firstErrorMessages[0] : "Please check your input.";
           setError(`Validation error: ${errorMessage}`);
         }
-      } else if (err?.code === "CALL_EXCEPTION") {
+      } else if (err && typeof err === 'object' && 'code' in err && err.code === "CALL_EXCEPTION") {
         setError("Failed to connect to blockchain. Please check your connection and try again.");
-      } else if (err?.message) {
+      } else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
         setError(`Failed to issue certificate: ${err.message}`);
       } else {
         setError("Failed to issue certificate. Please try again.");

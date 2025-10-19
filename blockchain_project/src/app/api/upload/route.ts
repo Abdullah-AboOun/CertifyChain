@@ -1,5 +1,5 @@
 import { writeFile, mkdir } from "fs/promises";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import path from "path";
 import { auth } from "~/server/auth";
 

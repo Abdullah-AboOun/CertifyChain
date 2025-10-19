@@ -9,18 +9,11 @@ import {
   Shield,
 } from "lucide-react";
 import { verifyCertificate } from "~/lib/web3/contract";
-import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Alert, AlertDescription } from "~/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 import Image from "next/image";
 
 export default function VerifyPage() {
@@ -294,13 +287,12 @@ export default function VerifyPage() {
                     </AlertDescription>
                   </Alert>
                   
-                  <div className="rounded-lg border border-muted bg-muted/50 p-4">
+                                    <div className="rounded-lg border border-muted bg-muted/50 p-4">
                     <h3 className="font-medium text-sm mb-2">Troubleshooting Tips:</h3>
                     <ul className="text-muted-foreground space-y-1 text-sm list-disc list-inside">
-                      <li>Double-check the certificate ID is correct</li>
-                      <li>Ensure the ID starts with "0x" and has 64 hexadecimal characters</li>
-                      <li>Verify you're connected to the correct blockchain network</li>
-                      <li>Contact the certificate issuer if you believe this is an error</li>
+                      <li>Verify the certificate ID is exactly 66 characters (0x + 64 hex digits)</li>
+                      <li>Check if you&apos;re connected to the correct blockchain network</li>
+                      <li>Ensure the certificate was issued on this network</li>
                     </ul>
                   </div>
                 </div>
