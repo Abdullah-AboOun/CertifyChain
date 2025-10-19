@@ -19,7 +19,17 @@ A decentralized certificate issuance and verification platform built with Next.j
 
 ## 🚀 Quick Start
 
-### Automated Setup (Recommended)
+### First Time Setup
+
+```bash
+# Install dependencies (only needed once)
+./setup.sh
+
+# Start the application
+./start.sh
+```
+
+### Subsequent Runs
 
 ```bash
 ./start.sh
@@ -31,7 +41,9 @@ This will start the blockchain, deploy contracts, set up the database, and launc
 
 ```bash
 # 1. Install dependencies
-pnpm install
+cd hardhat && pnpm install
+cd ../blockchain_project && pnpm install
+cd ..
 
 # 2. Start Hardhat node (terminal 1)
 cd hardhat && npx hardhat node
@@ -51,6 +63,8 @@ pnpm prisma generate && pnpm prisma db push
 pnpm dev
 ```
 
+## 📱 Usage
+
 ## � Usage
 
 ### Setup MetaMask
@@ -67,7 +81,7 @@ pnpm dev
 ### Verify Certificates
 Visit `/verify` and enter certificate ID to verify authenticity
 
-## � Project Structure
+## 📂 Project Structure
 
 ```
 ├── hardhat/                    # Smart contracts

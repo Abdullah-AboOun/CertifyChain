@@ -2,7 +2,17 @@
 
 ## 🎯 How to Run
 
-### Automated Setup (Recommended)
+### First Time Setup
+
+```bash
+# Install dependencies (only needed once)
+./setup.sh
+
+# Start the application
+./start.sh
+```
+
+### Subsequent Runs
 
 ```bash
 ./start.sh
