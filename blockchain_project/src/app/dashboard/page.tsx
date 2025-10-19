@@ -28,7 +28,13 @@ import {
 } from "~/lib/web3/contract";
 import { ethers } from "ethers";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
@@ -56,9 +62,12 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
-  const { data: entity, refetch: refetchEntity } = api.entity.getMy.useQuery(undefined, {
-    enabled: !!session?.user,
-  });
+  const { data: entity, refetch: refetchEntity } = api.entity.getMy.useQuery(
+    undefined,
+    {
+      enabled: !!session?.user,
+    },
+  );
 
   // Check if entity is registered on blockchain
   useEffect(() => {
@@ -70,7 +79,9 @@ export default function DashboardPage() {
 
       try {
         // Check blockchain registration
-        const blockchainRegistered = await isEntityRegistered(session.user.walletAddress);
+        const blockchainRegistered = await isEntityRegistered(
+          session.user.walletAddress,
+        );
         setIsRegistered(blockchainRegistered);
       } catch (error) {
         console.error("Error checking registration:", error);
@@ -225,12 +236,14 @@ function NotRegisteredView({
     if (website.trim()) {
       try {
         // Add https:// if no protocol specified
-        const urlToValidate = website.trim().match(/^https?:\/\//) 
-          ? website.trim() 
+        const urlToValidate = website.trim().match(/^https?:\/\//)
+          ? website.trim()
           : `https://${website.trim()}`;
         new URL(urlToValidate);
       } catch {
-        setError("Please enter a valid website URL (e.g., example.com or https://example.com) or leave it empty");
+        setError(
+          "Please enter a valid website URL (e.g., example.com or https://example.com) or leave it empty",
+        );
         return;
       }
     }
@@ -258,8 +271,9 @@ function NotRegisteredView({
       // Register in database only if not already exists
       if (!existingEntity) {
         // Use "Other" text if organization type is "other"
-        const finalOrgType = organizationType === "other" ? otherOrgType : organizationType;
-        
+        const finalOrgType =
+          organizationType === "other" ? otherOrgType : organizationType;
+
         await registerMutation.mutateAsync({
           walletAddress,
           name: entityName,
@@ -280,28 +294,39 @@ function NotRegisteredView({
       setShowForm(false);
     } catch (err: unknown) {
       console.error("Registration error:", err);
-      
+
       // Handle validation errors from tRPC
-      if (err && typeof err === 'object' && 'data' in err) {
+      if (err && typeof err === "object" && "data" in err) {
         const errorData = err.data as any;
         const zodError = errorData?.zodError;
         const fieldErrors = zodError?.fieldErrors ?? {};
-        
+
         // Extract first error message
         if (fieldErrors.website) {
-          setError("Please enter a valid website URL (e.g., example.com or https://example.com) or leave it empty.");
+          setError(
+            "Please enter a valid website URL (e.g., example.com or https://example.com) or leave it empty.",
+          );
         } else if (fieldErrors.email) {
           setError("Please enter a valid email address or leave it empty.");
         } else {
           // Generic validation error
           const firstErrorField = Object.keys(fieldErrors)[0];
-          const firstErrorMessages = fieldErrors[firstErrorField as keyof typeof fieldErrors];
-          const errorMessage = Array.isArray(firstErrorMessages) ? firstErrorMessages[0] : "Please check your input.";
+          const firstErrorMessages =
+            fieldErrors[firstErrorField as keyof typeof fieldErrors];
+          const errorMessage = Array.isArray(firstErrorMessages)
+            ? firstErrorMessages[0]
+            : "Please check your input.";
           setError(`Validation error: ${errorMessage}`);
         }
       }
       // Check if the error is from blockchain (already registered)
-      else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message.includes("already registered")) {
+      else if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof err.message === "string" &&
+        err.message.includes("already registered")
+      ) {
         // Try to just sync the database
         try {
           if (!existingEntity) {
@@ -316,9 +341,21 @@ function NotRegisteredView({
         } catch {
           setError("Entity already registered. Please refresh the page.");
         }
-      } else if (err && typeof err === 'object' && 'code' in err && err.code === "CALL_EXCEPTION") {
-        setError("Failed to connect to blockchain. Please check your connection and try again.");
-      } else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
+      } else if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        err.code === "CALL_EXCEPTION"
+      ) {
+        setError(
+          "Failed to connect to blockchain. Please check your connection and try again.",
+        );
+      } else if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof err.message === "string"
+      ) {
         setError(`Registration failed: ${err.message}`);
       } else {
         setError("Failed to register entity. Please try again.");
@@ -333,22 +370,24 @@ function NotRegisteredView({
       <CardHeader>
         <Shield className="text-muted-foreground mx-auto h-16 w-16" />
         <CardTitle className="mt-4">
-          {existingEntity ? "Complete Blockchain Registration" : "Register as Issuing Entity"}
+          {existingEntity
+            ? "Complete Blockchain Registration"
+            : "Register as Issuing Entity"}
         </CardTitle>
         <CardDescription>
-          {existingEntity 
+          {existingEntity
             ? "Your entity exists in our database. Complete the blockchain registration to start issuing certificates."
-            : "You need to register as an issuing entity before you can issue certificates"
-          }
+            : "You need to register as an issuing entity before you can issue certificates"}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {existingEntity && (
           <Alert className="mb-4 text-left">
             <AlertDescription>
-              <strong>Note:</strong> Your entity "{existingEntity.name}" is already in our database. 
-              If you're having trouble accessing the dashboard, try clicking the button below to verify 
-              your blockchain registration status.
+              <strong>Note:</strong> Your entity "{existingEntity.name}" is
+              already in our database. If you're having trouble accessing the
+              dashboard, try clicking the button below to verify your blockchain
+              registration status.
             </AlertDescription>
           </Alert>
         )}
@@ -361,8 +400,8 @@ function NotRegisteredView({
           <div className="space-y-4 text-left">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-sm">Basic Information</h3>
-              
+              <h3 className="text-sm font-semibold">Basic Information</h3>
+
               <div className="space-y-2">
                 <Label htmlFor="entityName">Organization Name *</Label>
                 <Input
@@ -375,7 +414,10 @@ function NotRegisteredView({
 
               <div className="space-y-2">
                 <Label htmlFor="organizationType">Organization Type</Label>
-                <Select value={organizationType} onValueChange={setOrganizationType}>
+                <Select
+                  value={organizationType}
+                  onValueChange={setOrganizationType}
+                >
                   <SelectTrigger id="organizationType">
                     <SelectValue placeholder="Select organization type" />
                   </SelectTrigger>
@@ -385,12 +427,20 @@ function NotRegisteredView({
                     <SelectItem value="school">School</SelectItem>
                     <SelectItem value="company">Company</SelectItem>
                     <SelectItem value="corporation">Corporation</SelectItem>
-                    <SelectItem value="government">Government Agency</SelectItem>
-                    <SelectItem value="non-profit">Non-Profit Organization</SelectItem>
+                    <SelectItem value="government">
+                      Government Agency
+                    </SelectItem>
+                    <SelectItem value="non-profit">
+                      Non-Profit Organization
+                    </SelectItem>
                     <SelectItem value="ngo">NGO</SelectItem>
-                    <SelectItem value="healthcare">Healthcare Institution</SelectItem>
+                    <SelectItem value="healthcare">
+                      Healthcare Institution
+                    </SelectItem>
                     <SelectItem value="training">Training Institute</SelectItem>
-                    <SelectItem value="certification">Certification Body</SelectItem>
+                    <SelectItem value="certification">
+                      Certification Body
+                    </SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -398,7 +448,9 @@ function NotRegisteredView({
 
               {organizationType === "other" && (
                 <div className="space-y-2">
-                  <Label htmlFor="otherOrgType">Specify Organization Type *</Label>
+                  <Label htmlFor="otherOrgType">
+                    Specify Organization Type *
+                  </Label>
                   <Input
                     id="otherOrgType"
                     value={otherOrgType}
@@ -422,9 +474,9 @@ function NotRegisteredView({
 
             {/* Contact Information */}
             <div className="space-y-4 border-t pt-4">
-              <h3 className="font-semibold text-sm">Contact Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="text-sm font-semibold">Contact Information</h3>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -483,11 +535,15 @@ function NotRegisteredView({
 
             {/* Legal Information */}
             <div className="space-y-4 border-t pt-4">
-              <h3 className="font-semibold text-sm">Legal Information (Optional)</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h3 className="text-sm font-semibold">
+                Legal Information (Optional)
+              </h3>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="registrationNumber">Registration Number</Label>
+                  <Label htmlFor="registrationNumber">
+                    Registration Number
+                  </Label>
                   <Input
                     id="registrationNumber"
                     value={registrationNumber}
@@ -511,7 +567,7 @@ function NotRegisteredView({
             {registrationFee && (
               <Card>
                 <CardContent className="pt-4">
-                  <p className="font-medium text-sm">Registration Fee</p>
+                  <p className="text-sm font-medium">Registration Fee</p>
                   <p className="text-muted-foreground text-sm">
                     {ethers.formatEther(registrationFee)} ETH
                   </p>
@@ -553,20 +609,23 @@ function RegisteredView({
   showIssueForm,
   setShowIssueForm,
 }: {
-  entity: {
-    id: string;
-    name: string;
-    description: string | null;
-    organizationType: string | null;
-    country: string | null;
-    website: string | null;
-    email: string | null;
-    phone: string | null;
-    address: string | null;
-    registrationNumber: string | null;
-    taxId: string | null;
-    walletAddress: string;
-  } | null | undefined;
+  entity:
+    | {
+        id: string;
+        name: string;
+        description: string | null;
+        organizationType: string | null;
+        country: string | null;
+        website: string | null;
+        email: string | null;
+        phone: string | null;
+        address: string | null;
+        registrationNumber: string | null;
+        taxId: string | null;
+        walletAddress: string;
+      }
+    | null
+    | undefined;
   showIssueForm: boolean;
   setShowIssueForm: (show: boolean) => void;
 }) {
@@ -577,12 +636,17 @@ function RegisteredView({
   return (
     <div className="space-y-6">
       {/* Entity Info */}
-      <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => setShowEntityDetails(!showEntityDetails)}>
+      <Card
+        className="cursor-pointer transition-all hover:shadow-md"
+        onClick={() => setShowEntityDetails(!showEntityDetails)}
+      >
         <CardContent className="pt-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold">{entity?.name ?? "Entity"}</h2>
+                <h2 className="text-2xl font-bold">
+                  {entity?.name ?? "Entity"}
+                </h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -600,41 +664,59 @@ function RegisteredView({
                 </Button>
               </div>
               {entity?.description && (
-                <p className="text-muted-foreground mt-1">{entity.description}</p>
+                <p className="text-muted-foreground mt-1">
+                  {entity.description}
+                </p>
               )}
-              
+
               {showEntityDetails && (
                 <div className="mt-4 space-y-2 border-t pt-4">
                   <div>
-                    <Label className="text-muted-foreground text-xs">Wallet Address</Label>
-                    <p className="font-mono text-sm break-all">{entity?.walletAddress}</p>
+                    <Label className="text-muted-foreground text-xs">
+                      Wallet Address
+                    </Label>
+                    <p className="font-mono text-sm break-all">
+                      {entity?.walletAddress}
+                    </p>
                   </div>
                   {entity?.organizationType && (
                     <div>
-                      <Label className="text-muted-foreground text-xs">Organization Type</Label>
+                      <Label className="text-muted-foreground text-xs">
+                        Organization Type
+                      </Label>
                       <p className="text-sm">{entity.organizationType}</p>
                     </div>
                   )}
                   {entity?.email && (
                     <div>
-                      <Label className="text-muted-foreground text-xs">Email</Label>
+                      <Label className="text-muted-foreground text-xs">
+                        Email
+                      </Label>
                       <p className="text-sm">{entity.email}</p>
                     </div>
                   )}
                   {entity?.phone && (
                     <div>
-                      <Label className="text-muted-foreground text-xs">Phone</Label>
+                      <Label className="text-muted-foreground text-xs">
+                        Phone
+                      </Label>
                       <p className="text-sm">{entity.phone}</p>
                     </div>
                   )}
                   {entity?.website && (
                     <div>
-                      <Label className="text-muted-foreground text-xs">Website</Label>
-                      <a 
-                        href={entity.website.startsWith('http') ? entity.website : `https://${entity.website}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-sm text-primary hover:underline"
+                      <Label className="text-muted-foreground text-xs">
+                        Website
+                      </Label>
+                      <a
+                        href={
+                          entity.website.startsWith("http")
+                            ? entity.website
+                            : `https://${entity.website}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary text-sm hover:underline"
                       >
                         {entity.website}
                       </a>
@@ -642,14 +724,20 @@ function RegisteredView({
                   )}
                   {entity?.country && (
                     <div>
-                      <Label className="text-muted-foreground text-xs">Country</Label>
+                      <Label className="text-muted-foreground text-xs">
+                        Country
+                      </Label>
                       <p className="text-sm">{entity.country}</p>
                     </div>
                   )}
                   {entity?.address && (
                     <div>
-                      <Label className="text-muted-foreground text-xs">Address</Label>
-                      <p className="text-sm whitespace-pre-line">{entity.address}</p>
+                      <Label className="text-muted-foreground text-xs">
+                        Address
+                      </Label>
+                      <p className="text-sm whitespace-pre-line">
+                        {entity.address}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -715,7 +803,8 @@ function IssueCertificateForm({
   const [issuanceFee, setIssuanceFee] = useState<bigint | null>(null);
 
   const issueMutation = api.certificate.create.useMutation();
-  const updateBlockchainIdMutation = api.certificate.updateBlockchainId.useMutation();
+  const updateBlockchainIdMutation =
+    api.certificate.updateBlockchainId.useMutation();
 
   useEffect(() => {
     const fetchFee = async () => {
@@ -728,13 +817,14 @@ function IssueCertificateForm({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
         setError("Image size must be less than 5MB");
         return;
       }
-      
+
       setCertificateImage(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -821,24 +911,39 @@ function IssueCertificateForm({
       onSuccess();
     } catch (err: unknown) {
       console.error("Issue error:", err);
-      
+
       // Handle validation errors from tRPC
-      if (err && typeof err === 'object' && 'data' in err) {
+      if (err && typeof err === "object" && "data" in err) {
         const errorData = err.data as any;
         const zodError = errorData?.zodError;
         const fieldErrors = zodError?.fieldErrors ?? {};
-        
+
         if (fieldErrors.recipientEmail) {
           setError("Please enter a valid email address or leave it empty.");
         } else {
           const firstErrorField = Object.keys(fieldErrors)[0];
-          const firstErrorMessages = fieldErrors[firstErrorField as keyof typeof fieldErrors];
-          const errorMessage = Array.isArray(firstErrorMessages) ? firstErrorMessages[0] : "Please check your input.";
+          const firstErrorMessages =
+            fieldErrors[firstErrorField as keyof typeof fieldErrors];
+          const errorMessage = Array.isArray(firstErrorMessages)
+            ? firstErrorMessages[0]
+            : "Please check your input.";
           setError(`Validation error: ${errorMessage}`);
         }
-      } else if (err && typeof err === 'object' && 'code' in err && err.code === "CALL_EXCEPTION") {
-        setError("Failed to connect to blockchain. Please check your connection and try again.");
-      } else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
+      } else if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        err.code === "CALL_EXCEPTION"
+      ) {
+        setError(
+          "Failed to connect to blockchain. Please check your connection and try again.",
+        );
+      } else if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof err.message === "string"
+      ) {
         setError(`Failed to issue certificate: ${err.message}`);
       } else {
         setError("Failed to issue certificate. Please try again.");
@@ -875,7 +980,7 @@ function IssueCertificateForm({
               onChange={(e) => setRecipientEmail(e.target.value)}
               placeholder="john@example.com (optional)"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Leave empty or provide a valid email address
             </p>
           </div>
@@ -889,15 +994,15 @@ function IssueCertificateForm({
               onChange={handleImageChange}
               disabled={loading}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Upload an image of the certificate (Max 5MB)
             </p>
             {imagePreview && (
-              <div className="mt-2 relative w-full max-w-md mx-auto">
+              <div className="relative mx-auto mt-2 w-full max-w-md">
                 <img
                   src={imagePreview}
                   alt="Certificate preview"
-                  className="w-full h-auto rounded-lg border"
+                  className="h-auto w-full rounded-lg border"
                 />
               </div>
             )}
@@ -917,7 +1022,7 @@ function IssueCertificateForm({
           {issuanceFee && (
             <Card>
               <CardContent className="pt-4">
-                <p className="font-medium text-sm">Issuance Fee</p>
+                <p className="text-sm font-medium">Issuance Fee</p>
                 <p className="text-muted-foreground text-sm">
                   {ethers.formatEther(issuanceFee)} ETH
                 </p>
@@ -932,18 +1037,10 @@ function IssueCertificateForm({
           )}
 
           <div className="flex gap-2">
-            <Button
-              onClick={handleIssue}
-              disabled={loading}
-              className="flex-1"
-            >
+            <Button onClick={handleIssue} disabled={loading} className="flex-1">
               {loading ? "Issuing..." : "Issue Certificate"}
             </Button>
-            <Button
-              onClick={onCancel}
-              disabled={loading}
-              variant="outline"
-            >
+            <Button onClick={onCancel} disabled={loading} variant="outline">
               Cancel
             </Button>
           </div>
@@ -1023,8 +1120,9 @@ function CertificatesList({
                     {cert.recipientName || "Certificate"}
                   </h3>
                   {cert.blockchainId && (
-                    <span className="bg-primary/10 text-primary rounded px-2 py-0.5 text-xs font-mono">
-                      {cert.blockchainId.slice(0, 6)}...{cert.blockchainId.slice(-4)}
+                    <span className="bg-primary/10 text-primary rounded px-2 py-0.5 font-mono text-xs">
+                      {cert.blockchainId.slice(0, 6)}...
+                      {cert.blockchainId.slice(-4)}
                     </span>
                   )}
                 </div>
@@ -1082,12 +1180,12 @@ function CertificatesList({
       {/* Certificate Preview Modal */}
       {previewCert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <Card className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <Card className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto">
             <Button
               onClick={() => setPreviewCert(null)}
               variant="ghost"
               size="sm"
-              className="absolute right-2 top-2"
+              className="absolute top-2 right-2"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -1097,7 +1195,7 @@ function CertificatesList({
             <CardContent className="space-y-4">
               {/* Certificate Image */}
               {previewCert.documentUrl && (
-                <div className="rounded-lg border bg-muted p-4">
+                <div className="bg-muted rounded-lg border p-4">
                   <img
                     src={previewCert.documentUrl}
                     alt="Certificate"
@@ -1110,17 +1208,21 @@ function CertificatesList({
               <div className="space-y-3">
                 {/* Certificate ID */}
                 {previewCert.blockchainId && (
-                  <div className="rounded-lg border bg-muted/50 p-3">
-                    <Label className="text-muted-foreground text-xs">Certificate ID</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="font-mono text-sm break-all font-medium flex-1">
+                  <div className="bg-muted/50 rounded-lg border p-3">
+                    <Label className="text-muted-foreground text-xs">
+                      Certificate ID
+                    </Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="flex-1 font-mono text-sm font-medium break-all">
                         {previewCert.blockchainId}
                       </p>
                       <Button
-                        onClick={() => handleCopyCertificateId(previewCert.blockchainId)}
+                        onClick={() =>
+                          handleCopyCertificateId(previewCert.blockchainId)
+                        }
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 shrink-0"
+                        className="h-8 w-8 shrink-0 p-0"
                         title="Copy Certificate ID"
                       >
                         {copiedId ? (
@@ -1134,69 +1236,101 @@ function CertificatesList({
                 )}
 
                 <div>
-                  <Label className="text-muted-foreground text-xs">Recipient Name</Label>
+                  <Label className="text-muted-foreground text-xs">
+                    Recipient Name
+                  </Label>
                   <p className="font-medium">{previewCert.recipientName}</p>
                 </div>
 
                 {previewCert.recipientEmail && (
                   <div>
-                    <Label className="text-muted-foreground text-xs">Recipient Email</Label>
+                    <Label className="text-muted-foreground text-xs">
+                      Recipient Email
+                    </Label>
                     <p className="font-medium">{previewCert.recipientEmail}</p>
                   </div>
                 )}
 
                 {previewCert.description && (
                   <div>
-                    <Label className="text-muted-foreground text-xs">Description</Label>
+                    <Label className="text-muted-foreground text-xs">
+                      Description
+                    </Label>
                     <p className="text-sm">{previewCert.description}</p>
                   </div>
                 )}
 
                 <div>
-                  <Label className="text-muted-foreground text-xs">Issuer</Label>
-                  <p className="font-medium">{previewCert.issuer?.name || "Unknown"}</p>
-                </div>
-
-                <div>
-                  <Label className="text-muted-foreground text-xs">Issue Date</Label>
-                  <p className="text-sm">
-                    {new Date(previewCert.issuedAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                  <Label className="text-muted-foreground text-xs">
+                    Issuer
+                  </Label>
+                  <p className="font-medium">
+                    {previewCert.issuer?.name || "Unknown"}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-muted-foreground text-xs">Certificate Hash</Label>
-                  <p className="font-mono break-all text-xs">{previewCert.certificateHash}</p>
+                  <Label className="text-muted-foreground text-xs">
+                    Issue Date
+                  </Label>
+                  <p className="text-sm">
+                    {new Date(previewCert.issuedAt).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-muted-foreground text-xs">
+                    Certificate Hash
+                  </Label>
+                  <p className="font-mono text-xs break-all">
+                    {previewCert.certificateHash}
+                  </p>
                 </div>
 
                 {previewCert.transactionHash && (
                   <div>
-                    <Label className="text-muted-foreground text-xs">Transaction Hash</Label>
-                    <p className="font-mono break-all text-xs">{previewCert.transactionHash}</p>
+                    <Label className="text-muted-foreground text-xs">
+                      Transaction Hash
+                    </Label>
+                    <p className="font-mono text-xs break-all">
+                      {previewCert.transactionHash}
+                    </p>
                   </div>
                 )}
 
                 <div>
-                  <Label className="text-muted-foreground text-xs">Status</Label>
+                  <Label className="text-muted-foreground text-xs">
+                    Status
+                  </Label>
                   <div className="flex items-center gap-2">
                     {previewCert.isRevoked ? (
                       <>
                         <XCircle className="text-destructive h-4 w-4" />
-                        <span className="text-destructive font-medium">Revoked</span>
+                        <span className="text-destructive font-medium">
+                          Revoked
+                        </span>
                         {previewCert.revokedAt && (
                           <span className="text-muted-foreground text-xs">
-                            on {new Date(previewCert.revokedAt).toLocaleDateString()}
+                            on{" "}
+                            {new Date(
+                              previewCert.revokedAt,
+                            ).toLocaleDateString()}
                           </span>
                         )}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="font-medium text-green-500">Valid</span>
+                        <span className="font-medium text-green-500">
+                          Valid
+                        </span>
                       </>
                     )}
                   </div>

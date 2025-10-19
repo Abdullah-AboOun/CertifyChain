@@ -96,7 +96,9 @@ export async function verifyCertificate(certificateId: string) {
   return await (contract as any).verifyCertificate(certificateId);
 }
 
-export async function getCertificateIdByHash(certificateHash: string): Promise<string> {
+export async function getCertificateIdByHash(
+  certificateHash: string,
+): Promise<string> {
   const contract = getContract();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return await (contract as any).getCertificateIdByHash(certificateHash);
