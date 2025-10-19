@@ -9,7 +9,7 @@ contract CertificateRegistry {
     
     // Struct to store certificate data
     struct Certificate {
-        uint256 id;
+        bytes32 id;
         string certificateHash; // IPFS hash or document hash
         address issuer;
         uint256 issuedAt;
@@ -33,23 +33,21 @@ contract CertificateRegistry {
     uint256 public certificateCount;
     
     // Mappings
-    mapping(uint256 => Certificate) public certificates;
+    mapping(bytes32 => Certificate) public certificates;
+    mapping(string => bytes32) public certificateHashToId; // Map hash to ID for lookup
     mapping(address => IssuingEntity) public issuingEntities;
     mapping(address => bool) public isRegisteredEntity;
-    mapping(address => uint256[]) public entityCertificates;
+    mapping(address => bytes32[]) public entityCertificates;
     
     // Events
     event EntityRegistered(address indexed entity, string name, uint256 timestamp);
-    event EntityDeactivated(address indexed entity, uint256 timestamp);
     event CertificateIssued(
-        uint256 indexed certificateId,
+        bytes32 indexed certificateId,
         address indexed issuer,
         string certificateHash,
         uint256 timestamp
     );
-    event CertificateRevoked(uint256 indexed certificateId, address indexed issuer, uint256 timestamp);
-    event FeeUpdated(string feeType, uint256 newFee);
-    event FeesWithdrawn(address indexed owner, uint256 amount);
+    event CertificateRevoked(bytes32 indexed certificateId, address indexed issuer, uint256 timestamp);
     
     // Modifiers
     modifier onlyOwner() {
@@ -63,8 +61,8 @@ contract CertificateRegistry {
         _;
     }
     
-    modifier certificateExists(uint256 _certificateId) {
-        require(_certificateId > 0 && _certificateId <= certificateCount, "Certificate does not exist");
+    modifier certificateExists(bytes32 _certificateId) {
+        require(certificates[_certificateId].issuer != address(0), "Certificate does not exist");
         _;
     }
     
@@ -102,18 +100,23 @@ contract CertificateRegistry {
      * @dev Issue a new certificate
      * @param _certificateHash Hash of the certificate document
      * @param _metadata Additional metadata
+     * @return certificateId The generated certificate ID
      */
     function issueCertificate(
         string memory _certificateHash,
         string memory _metadata
-    ) external payable onlyRegisteredEntity returns (uint256) {
+    ) external payable onlyRegisteredEntity returns (bytes32) {
         require(msg.value >= certificateIssuanceFee, "Insufficient issuance fee");
         require(bytes(_certificateHash).length > 0, "Certificate hash cannot be empty");
+        require(certificateHashToId[_certificateHash] == bytes32(0), "Certificate hash already used");
+        
+        // Generate unique certificate ID from hash, issuer, and timestamp
+        bytes32 certificateId = keccak256(abi.encodePacked(_certificateHash, msg.sender, block.timestamp, certificateCount));
         
         certificateCount++;
         
-        certificates[certificateCount] = Certificate({
-            id: certificateCount,
+        certificates[certificateId] = Certificate({
+            id: certificateId,
             certificateHash: _certificateHash,
             issuer: msg.sender,
             issuedAt: block.timestamp,
@@ -121,19 +124,20 @@ contract CertificateRegistry {
             metadata: _metadata
         });
         
-        entityCertificates[msg.sender].push(certificateCount);
+        certificateHashToId[_certificateHash] = certificateId;
+        entityCertificates[msg.sender].push(certificateId);
         issuingEntities[msg.sender].certificateCount++;
         
-        emit CertificateIssued(certificateCount, msg.sender, _certificateHash, block.timestamp);
+        emit CertificateIssued(certificateId, msg.sender, _certificateHash, block.timestamp);
         
-        return certificateCount;
+        return certificateId;
     }
     
     /**
      * @dev Revoke a certificate
      * @param _certificateId ID of the certificate to revoke
      */
-    function revokeCertificate(uint256 _certificateId) 
+    function revokeCertificate(bytes32 _certificateId) 
         external 
         onlyRegisteredEntity 
         certificateExists(_certificateId) 
@@ -158,12 +162,12 @@ contract CertificateRegistry {
      * @return metadata Additional metadata
      * @return issuerName Name of the issuing entity
      */
-    function verifyCertificate(uint256 _certificateId) 
+    function verifyCertificate(bytes32 _certificateId) 
         external 
         view 
         certificateExists(_certificateId) 
         returns (
-            uint256 id,
+            bytes32 id,
             string memory certificateHash,
             address issuer,
             uint256 issuedAt,
@@ -187,99 +191,27 @@ contract CertificateRegistry {
     }
     
     /**
+     * @dev Get certificate ID by certificate hash
+     * @param _certificateHash The certificate hash
+     * @return Certificate ID
+     */
+    function getCertificateIdByHash(string memory _certificateHash) 
+        external 
+        view 
+        returns (bytes32) 
+    {
+        return certificateHashToId[_certificateHash];
+    }
+    
+    /**
      * @dev Get all certificates issued by an entity
      * @param _entity Address of the issuing entity
      * @return Array of certificate IDs
      */
-    function getEntityCertificates(address _entity) external view returns (uint256[] memory) {
+    function getEntityCertificates(address _entity) external view returns (bytes32[] memory) {
         return entityCertificates[_entity];
     }
     
-    /**
-     * @dev Get entity information
-     * @param _entity Address of the entity
-     * @return entityAddress Address of the entity
-     * @return name Name of the entity
-     * @return isActive Whether the entity is active
-     * @return registeredAt Timestamp when registered
-     * @return certCount Number of certificates issued
-     */
-    function getEntityInfo(address _entity) 
-        external 
-        view 
-        returns (
-            address entityAddress,
-            string memory name,
-            bool isActive,
-            uint256 registeredAt,
-            uint256 certCount
-        ) 
-    {
-        IssuingEntity memory entity = issuingEntities[_entity];
-        return (
-            entity.entityAddress,
-            entity.name,
-            entity.isActive,
-            entity.registeredAt,
-            entity.certificateCount
-        );
-    }
     
-    /**
-     * @dev Deactivate an entity (only owner)
-     * @param _entity Address of the entity to deactivate
-     */
-    function deactivateEntity(address _entity) external onlyOwner {
-        require(isRegisteredEntity[_entity], "Entity not registered");
-        issuingEntities[_entity].isActive = false;
-        emit EntityDeactivated(_entity, block.timestamp);
-    }
-    
-    /**
-     * @dev Activate an entity (only owner)
-     * @param _entity Address of the entity to activate
-     */
-    function activateEntity(address _entity) external onlyOwner {
-        require(isRegisteredEntity[_entity], "Entity not registered");
-        issuingEntities[_entity].isActive = true;
-        emit EntityRegistered(_entity, issuingEntities[_entity].name, block.timestamp);
-    }
-    
-    /**
-     * @dev Update registration fee (only owner)
-     * @param _newFee New registration fee
-     */
-    function updateRegistrationFee(uint256 _newFee) external onlyOwner {
-        registrationFee = _newFee;
-        emit FeeUpdated("registration", _newFee);
-    }
-    
-    /**
-     * @dev Update certificate issuance fee (only owner)
-     * @param _newFee New issuance fee
-     */
-    function updateIssuanceFee(uint256 _newFee) external onlyOwner {
-        certificateIssuanceFee = _newFee;
-        emit FeeUpdated("issuance", _newFee);
-    }
-    
-    /**
-     * @dev Withdraw collected fees (only owner)
-     */
-    function withdrawFees() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No fees to withdraw");
-        
-        (bool success, ) = owner.call{value: balance}("");
-        require(success, "Withdrawal failed");
-        
-        emit FeesWithdrawn(owner, balance);
-    }
-    
-    /**
-     * @dev Get contract balance
-     */
-    function getContractBalance() external view returns (uint256) {
-        return address(this).balance;
-    }
+
 }

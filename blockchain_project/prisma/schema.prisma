@@ -25,7 +25,7 @@ model IssuingEntity {
     updatedAt         DateTime      @updatedAt
     
     // Blockchain data
-    blockchainId      Int?          // ID on the blockchain
+    blockchainId      String?       // ID on the blockchain (sequential uint256 as string)
     transactionHash   String?       // Registration transaction hash
     
     certificates      Certificate[]
@@ -38,7 +38,7 @@ model IssuingEntity {
 // Certificate Model
 model Certificate {
     id                Int            @id @default(autoincrement())
-    blockchainId      Int?           @unique // ID on the blockchain
+    blockchainId      String?        @unique // Blockchain bytes32 ID (hex string)
     certificateHash   String         @unique // Server-generated hash
     recipientName     String
     recipientEmail    String?

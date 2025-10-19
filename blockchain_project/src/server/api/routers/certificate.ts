@@ -11,7 +11,7 @@ export const certificateRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        blockchainId: z.number().optional(),
+        blockchainId: z.string().optional(),
         recipientName: z.string(),
         recipientEmail: z.string().email().optional(),
         description: z.string().optional(),
@@ -51,6 +51,41 @@ export const certificateRouter = createTRPCRouter({
       });
     }),
 
+  // Update blockchain ID after issuance
+  updateBlockchainId: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        blockchainId: z.string(),
+        transactionHash: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get the certificate
+      const certificate = await ctx.db.certificate.findUnique({
+        where: { id: input.id },
+        include: { issuer: true },
+      });
+
+      if (!certificate) {
+        throw new Error("Certificate not found");
+      }
+
+      // Verify the issuer belongs to the current user
+      if (certificate.issuer.userId !== ctx.session.user.id) {
+        throw new Error("Unauthorized");
+      }
+
+      // Update the certificate
+      return ctx.db.certificate.update({
+        where: { id: input.id },
+        data: {
+          blockchainId: input.blockchainId,
+          transactionHash: input.transactionHash ?? certificate.transactionHash,
+        },
+      });
+    }),
+
   // Get certificate by ID
   getById: publicProcedure
     .input(z.object({ id: z.number() }))
@@ -65,7 +100,7 @@ export const certificateRouter = createTRPCRouter({
 
   // Get certificate by blockchain ID
   getByBlockchainId: publicProcedure
-    .input(z.object({ blockchainId: z.number() }))
+    .input(z.object({ blockchainId: z.string() }))
     .query(async ({ ctx, input }) => {
       return ctx.db.certificate.findUnique({
         where: { blockchainId: input.blockchainId },

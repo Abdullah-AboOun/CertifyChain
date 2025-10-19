@@ -80,7 +80,7 @@ export async function issueCertificate(
   return await tx.wait();
 }
 
-export async function revokeCertificate(certificateId: number) {
+export async function revokeCertificate(certificateId: string) {
   const provider = getBrowserProvider();
   const signer = await getSigner(provider);
   const contract = getContract(signer);
@@ -90,10 +90,16 @@ export async function revokeCertificate(certificateId: number) {
   return await tx.wait();
 }
 
-export async function verifyCertificate(certificateId: number) {
+export async function verifyCertificate(certificateId: string) {
   const contract = getContract();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return await (contract as any).verifyCertificate(certificateId);
+}
+
+export async function getCertificateIdByHash(certificateHash: string): Promise<string> {
+  const contract = getContract();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return await (contract as any).getCertificateIdByHash(certificateHash);
 }
 
 export async function getEntityInfo(address: string) {

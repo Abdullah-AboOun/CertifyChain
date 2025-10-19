@@ -9,6 +9,7 @@ import {
   Shield,
 } from "lucide-react";
 import { verifyCertificate } from "~/lib/web3/contract";
+import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -20,27 +21,33 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import Image from "next/image";
 
 export default function VerifyPage() {
   const [certificateId, setCertificateId] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     found: boolean;
-    data?: {
+    blockchainData?: {
       id: bigint;
       certificateHash: string;
       issuer: string;
-      recipient: string;
       issuedAt: bigint;
       isRevoked: boolean;
       metadata: string;
       issuerName: string;
     };
+    dbData?: {
+      recipientName: string;
+      recipientEmail?: string | null;
+      description?: string | null;
+      documentUrl?: string | null;
+    };
     error?: string;
   } | null>(null);
 
   const handleVerify = async () => {
-    if (!certificateId || isNaN(Number(certificateId))) {
+    if (!certificateId || certificateId.trim() === "") {
       setResult({ found: false, error: "Please enter a valid certificate ID" });
       return;
     }
@@ -49,8 +56,20 @@ export default function VerifyPage() {
     setResult(null);
 
     try {
-      const data = await verifyCertificate(Number(certificateId));
-      setResult({ found: true, data });
+      // Verify on blockchain
+      const blockchainData = await verifyCertificate(certificateId);
+      
+      // Fetch from database for additional info using proper tRPC query format
+      const input = { json: { blockchainId: certificateId } };
+      const dbResponse = await fetch(`/api/trpc/certificate.getByBlockchainId?input=${encodeURIComponent(JSON.stringify(input))}`);
+      let dbData = undefined;
+      
+      if (dbResponse.ok) {
+        const dbResult = await dbResponse.json();
+        dbData = dbResult.result?.data?.json;
+      }
+      
+      setResult({ found: true, blockchainData, dbData });
     } catch (error) {
       console.error(error);
       setResult({
@@ -81,10 +100,11 @@ export default function VerifyPage() {
             <div className="flex gap-2">
               <Input
                 type="text"
-                placeholder="Enter Certificate ID (e.g., 1, 2, 3...)"
+                placeholder="Enter Certificate ID (e.g., 0x1234...)"
                 value={certificateId}
                 onChange={(e) => setCertificateId(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleVerify()}
+                className="font-mono"
               />
               <Button onClick={handleVerify} disabled={loading}>
                 {loading ? (
@@ -106,10 +126,10 @@ export default function VerifyPage() {
         {result && (
           <Card className="mt-6">
             <CardContent className="pt-6">
-              {result.found && result.data ? (
+              {result.found && result.blockchainData ? (
                 <div>
                   <div className="mb-4 flex items-center gap-2">
-                    {result.data.isRevoked ? (
+                    {result.blockchainData.isRevoked ? (
                       <>
                         <XCircle className="text-destructive h-8 w-8" />
                         <h2 className="text-destructive text-2xl font-bold">
@@ -127,31 +147,54 @@ export default function VerifyPage() {
                   </div>
 
                   <div className="space-y-4">
+                    {/* Certificate Image */}
+                    {result.dbData?.documentUrl && (
+                      <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
+                        <Image
+                          src={result.dbData.documentUrl}
+                          alt="Certificate"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <Label className="text-muted-foreground">
                         Certificate ID
                       </Label>
-                      <p className="font-mono text-lg">
-                        {result.data.id.toString()}
+                      <p className="font-mono text-sm break-all">
+                        {result.blockchainData.id.toString()}
                       </p>
                     </div>
+
+                    {result.dbData && (
+                      <>
+                        <div>
+                          <Label className="text-muted-foreground">
+                            Recipient Name
+                          </Label>
+                          <p className="text-lg font-medium">{result.dbData.recipientName}</p>
+                        </div>
+
+                        {result.dbData.recipientEmail && (
+                          <div>
+                            <Label className="text-muted-foreground">
+                              Recipient Email
+                            </Label>
+                            <p className="text-sm">{result.dbData.recipientEmail}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                     <div>
                       <Label className="text-muted-foreground">
                         Issuer
                       </Label>
-                      <p className="text-lg">{result.data.issuerName}</p>
+                      <p className="text-lg">{result.blockchainData.issuerName}</p>
                       <p className="text-muted-foreground font-mono text-sm">
-                        {result.data.issuer}
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label className="text-muted-foreground">
-                        Recipient Address
-                      </Label>
-                      <p className="font-mono text-sm">
-                        {result.data.recipient}
+                        {result.blockchainData.issuer}
                       </p>
                     </div>
 
@@ -160,7 +203,7 @@ export default function VerifyPage() {
                         Certificate Hash
                       </Label>
                       <p className="font-mono text-sm break-all">
-                        {result.data.certificateHash}
+                        {result.blockchainData.certificateHash}
                       </p>
                     </div>
 
@@ -170,17 +213,17 @@ export default function VerifyPage() {
                       </Label>
                       <p className="text-sm">
                         {new Date(
-                          Number(result.data.issuedAt) * 1000,
+                          Number(result.blockchainData.issuedAt) * 1000,
                         ).toLocaleString()}
                       </p>
                     </div>
 
-                    {result.data.metadata && (
+                    {result.dbData?.description && (
                       <div>
                         <Label className="text-muted-foreground">
-                          Metadata
+                          Description
                         </Label>
-                        <p className="text-sm">{result.data.metadata}</p>
+                        <p className="text-sm">{result.dbData.description}</p>
                       </div>
                     )}
 
@@ -190,12 +233,12 @@ export default function VerifyPage() {
                       </Label>
                       <p
                         className={`text-sm font-medium ${
-                          result.data.isRevoked
+                          result.blockchainData.isRevoked
                             ? "text-destructive"
                             : "text-green-500"
                         }`}
                       >
-                        {result.data.isRevoked ? "REVOKED" : "VALID"}
+                        {result.blockchainData.isRevoked ? "REVOKED" : "VALID"}
                       </p>
                     </div>
                   </div>

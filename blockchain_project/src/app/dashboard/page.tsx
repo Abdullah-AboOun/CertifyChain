@@ -409,6 +409,7 @@ function IssueCertificateForm({
   const [issuanceFee, setIssuanceFee] = useState<bigint | null>(null);
 
   const issueMutation = api.certificate.create.useMutation();
+  const updateBlockchainIdMutation = api.certificate.updateBlockchainId.useMutation();
 
   useEffect(() => {
     const fetchFee = async () => {
@@ -489,13 +490,17 @@ function IssueCertificateForm({
         issuanceFee,
       );
 
-      // Get the certificate ID from the event logs
-      const certId = receipt?.logs?.[0]?.topics?.[1];
-      const blockchainId = certId ? Number(certId) : undefined;
+      // Get the bytes32 certificate ID from the event logs (first indexed parameter)
+      const certIdBytes32 = receipt?.logs?.[0]?.topics?.[1];
 
-      // Update certificate with blockchain data
-      // Note: You'll need to add an update mutation for this
-      // For now, we'll just complete the flow
+      if (certIdBytes32) {
+        // Update certificate with blockchain data
+        await updateBlockchainIdMutation.mutateAsync({
+          id: certificate.id,
+          blockchainId: certIdBytes32,
+          transactionHash: receipt.hash,
+        });
+      }
 
       onSuccess();
     } catch (err) {
@@ -622,7 +627,7 @@ function CertificatesList({
   const [previewCert, setPreviewCert] = useState<any | null>(null);
   const revokeMutation = api.certificate.revoke.useMutation();
 
-  const handleRevoke = async (certId: number, blockchainId?: number) => {
+  const handleRevoke = async (certId: number, blockchainId?: string) => {
     if (!confirm("Are you sure you want to revoke this certificate?")) return;
 
     setRevokingId(certId);
@@ -670,8 +675,8 @@ function CertificatesList({
                     {cert.recipientName || "Certificate"}
                   </h3>
                   {cert.blockchainId && (
-                    <span className="bg-primary/10 text-primary rounded px-2 py-0.5 text-xs font-medium">
-                      #{cert.blockchainId}
+                    <span className="bg-primary/10 text-primary rounded px-2 py-0.5 text-xs font-mono">
+                      {cert.blockchainId.slice(0, 6)}...{cert.blockchainId.slice(-4)}
                     </span>
                   )}
                 </div>
@@ -740,9 +745,6 @@ function CertificatesList({
             </Button>
             <CardHeader>
               <CardTitle>Certificate Preview</CardTitle>
-              <CardDescription>
-                Certificate #{previewCert.blockchainId || previewCert.id}
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Certificate Image */}
@@ -762,7 +764,7 @@ function CertificatesList({
                 {previewCert.blockchainId && (
                   <div className="rounded-lg border bg-muted/50 p-3">
                     <Label className="text-muted-foreground text-xs">Certificate ID</Label>
-                    <p className="font-mono text-lg font-medium">#{previewCert.blockchainId}</p>
+                    <p className="font-mono text-sm break-all font-medium">{previewCert.blockchainId}</p>
                   </div>
                 )}
 

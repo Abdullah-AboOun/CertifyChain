@@ -13,7 +13,7 @@ export const entityRouter = createTRPCRouter({
         walletAddress: z.string(),
         name: z.string(),
         description: z.string().optional(),
-        blockchainId: z.number().optional(),
+        blockchainId: z.string().optional(),
         transactionHash: z.string().optional(),
       }),
     )
