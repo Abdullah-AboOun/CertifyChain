@@ -14,6 +14,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Copy,
+  Check,
 } from "lucide-react";
 import { api } from "~/trpc/react";
 import {
@@ -54,7 +56,11 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
-  // Check if entity is registered
+  const { data: entity, refetch: refetchEntity } = api.entity.getMy.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+
+  // Check if entity is registered on blockchain
   useEffect(() => {
     const checkRegistration = async () => {
       if (!session?.user?.walletAddress) {
@@ -63,12 +69,11 @@ export default function DashboardPage() {
       }
 
       try {
-        // Check both blockchain and database
+        // Check blockchain registration
         const blockchainRegistered = await isEntityRegistered(session.user.walletAddress);
         setIsRegistered(blockchainRegistered);
       } catch (error) {
         console.error("Error checking registration:", error);
-        // If we can't check blockchain, assume not registered
         setIsRegistered(false);
       } finally {
         setChecking(false);
@@ -81,10 +86,6 @@ export default function DashboardPage() {
       setChecking(false);
     }
   }, [session?.user?.walletAddress, status]);
-
-  const { data: entity, refetch: refetchEntity } = api.entity.getMy.useQuery(undefined, {
-    enabled: !!session?.user,
-  });
 
   if (status === "loading" || checking) {
     return (
@@ -108,7 +109,15 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {!isRegistered ? (
+        {/* Show registered view if entity exists in DB AND is registered on blockchain */}
+        {/* OR if entity exists in DB (they're considered registered) */}
+        {isRegistered || entity ? (
+          <RegisteredView
+            entity={entity}
+            showIssueForm={showIssueForm}
+            setShowIssueForm={setShowIssueForm}
+          />
+        ) : (
           <NotRegisteredView
             walletAddress={session.user.walletAddress!}
             showForm={showRegisterForm}
@@ -118,12 +127,6 @@ export default function DashboardPage() {
               void refetchEntity();
             }}
             existingEntity={entity}
-          />
-        ) : (
-          <RegisteredView
-            entity={entity}
-            showIssueForm={showIssueForm}
-            setShowIssueForm={setShowIssueForm}
           />
         )}
       </div>
@@ -959,7 +962,18 @@ function CertificatesList({
 }) {
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [previewCert, setPreviewCert] = useState<any | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
   const revokeMutation = api.certificate.revoke.useMutation();
+
+  const handleCopyCertificateId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   const handleRevoke = async (certId: number, blockchainId?: string) => {
     if (!confirm("Are you sure you want to revoke this certificate?")) return;
@@ -1098,7 +1112,24 @@ function CertificatesList({
                 {previewCert.blockchainId && (
                   <div className="rounded-lg border bg-muted/50 p-3">
                     <Label className="text-muted-foreground text-xs">Certificate ID</Label>
-                    <p className="font-mono text-sm break-all font-medium">{previewCert.blockchainId}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="font-mono text-sm break-all font-medium flex-1">
+                        {previewCert.blockchainId}
+                      </p>
+                      <Button
+                        onClick={() => handleCopyCertificateId(previewCert.blockchainId)}
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 shrink-0"
+                        title="Copy Certificate ID"
+                      >
+                        {copiedId ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 )}
 
