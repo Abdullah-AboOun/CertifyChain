@@ -758,6 +758,14 @@ function CertificatesList({
 
               {/* Certificate Details */}
               <div className="space-y-3">
+                {/* Certificate ID */}
+                {previewCert.blockchainId && (
+                  <div className="rounded-lg border bg-muted/50 p-3">
+                    <Label className="text-muted-foreground text-xs">Certificate ID</Label>
+                    <p className="font-mono text-lg font-medium">#{previewCert.blockchainId}</p>
+                  </div>
+                )}
+
                 <div>
                   <Label className="text-muted-foreground text-xs">Recipient Name</Label>
                   <p className="font-medium">{previewCert.recipientName}</p>
@@ -797,13 +805,6 @@ function CertificatesList({
                   <Label className="text-muted-foreground text-xs">Certificate Hash</Label>
                   <p className="font-mono break-all text-xs">{previewCert.certificateHash}</p>
                 </div>
-
-                {previewCert.blockchainId && (
-                  <div>
-                    <Label className="text-muted-foreground text-xs">Blockchain ID</Label>
-                    <p className="font-medium">#{previewCert.blockchainId}</p>
-                  </div>
-                )}
 
                 {previewCert.transactionHash && (
                   <div>
