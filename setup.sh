@@ -30,22 +30,43 @@ echo ""
 echo "🗄️  Setting up database..."
 cd blockchain_project
 
-# Generate Prisma client
-pnpm prisma generate > /dev/null 2>&1
-
 # Create .env if it doesn't exist
 if [ ! -f .env ]; then
     echo "  → Creating .env file..."
     cat > .env << 'EOF'
-DATABASE_URL="file:./db.sqlite"
+DATABASE_URL="file:./prisma/db.sqlite"
 NEXT_PUBLIC_CONTRACT_ADDRESS=""
 NEXT_PUBLIC_RPC_URL="http://localhost:8545"
 AUTH_SECRET="generated-secret-$(openssl rand -hex 32)"
 EOF
 fi
 
-# Push database schema
+# Generate Prisma client
+echo "  → Generating Prisma client..."
+pnpm prisma generate > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo "  ⚠️  Failed to generate Prisma client, trying again..."
+    pnpm prisma generate
+fi
+
+# Check if database exists
+DB_PATH="./prisma/db.sqlite"
+if [ ! -f "$DB_PATH" ]; then
+    echo "  → Database not found, creating new database..."
+else
+    echo "  → Database found, syncing schema..."
+fi
+
+# Push database schema (creates database if it doesn't exist)
 pnpm prisma db push --accept-data-loss > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+    echo "  → Database schema synced successfully"
+else
+    echo "  ⚠️  Database sync had issues, trying again..."
+    pnpm prisma db push --accept-data-loss
+fi
 
 cd ..
 

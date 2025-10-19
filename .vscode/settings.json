@@ -1,0 +1,11 @@
+{
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:t3app}/blockchain_project/prisma/db.sqlite",
+            "name": "DB"
+        }
+    ]
+}

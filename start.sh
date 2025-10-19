@@ -92,16 +92,52 @@ echo ""
 echo -e "${BLUE}💾 Step 3: Setting up database...${NC}"
 cd "$T3_DIR"
 
-# Generate Prisma client
-pnpm prisma generate
+# Check if .env exists
+if [ ! -f ".env" ]; then
+    echo -e "${YELLOW}⚠️  .env file not found. Creating from example...${NC}"
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+    else
+        echo -e "${RED}❌ No .env.example found. Please run ./setup.sh first${NC}"
+        kill $HARDHAT_PID
+        exit 1
+    fi
+fi
 
-# Push database schema
-pnpm prisma db push --accept-data-loss
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Database setup complete${NC}"
+# Check if database exists
+DB_PATH="./prisma/db.sqlite"
+if [ ! -f "$DB_PATH" ]; then
+    echo -e "${YELLOW}Database not found. Creating new database...${NC}"
+    
+    # Generate Prisma client
+    echo "  → Generating Prisma client..."
+    pnpm prisma generate > /dev/null 2>&1
+    
+    # Create database with schema
+    echo "  → Creating database with schema..."
+    pnpm prisma db push --accept-data-loss > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Database created successfully${NC}"
+    else
+        echo -e "${RED}❌ Failed to create database${NC}"
+        kill $HARDHAT_PID
+        exit 1
+    fi
 else
-    echo -e "${YELLOW}⚠️  Database setup had warnings (this is normal for first run)${NC}"
+    echo -e "${GREEN}Database found. Checking schema...${NC}"
+    
+    # Ensure Prisma client is generated
+    pnpm prisma generate > /dev/null 2>&1
+    
+    # Sync schema (non-destructive)
+    pnpm prisma db push > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Database schema is up to date${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Database schema sync had warnings${NC}"
+    fi
 fi
 
 echo ""
