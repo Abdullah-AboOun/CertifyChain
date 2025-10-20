@@ -10,7 +10,7 @@ contract CertificateRegistry {
     // Struct to store certificate data
     struct Certificate {
         bytes32 id;
-        string certificateHash; // IPFS hash or document hash
+        string certificateHash; // document hash
         address issuer;
         uint256 issuedAt;
         bool isRevoked;

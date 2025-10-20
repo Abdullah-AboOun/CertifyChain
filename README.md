@@ -72,8 +72,8 @@ pnpm dev
 2. Import test account private key: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 
 ### Issue Certificates
-1. Connect wallet and register entity (0.01 ETH fee)
-2. Issue certificates with recipient details (0.005 ETH fee)
+1. Connect wallet and register entity (0.0001 ETH fee)
+2. Issue certificates with recipient details (0.00005 ETH fee)
 3. View and manage certificates in dashboard
 
 ### Verify Certificates

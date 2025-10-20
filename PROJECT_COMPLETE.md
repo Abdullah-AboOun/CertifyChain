@@ -6,8 +6,8 @@ Your complete blockchain certificate management platform is ready! Here's everyt
 
 ### 1. Smart Contract (Solidity)
 ✅ `CertificateRegistry.sol` - Optimized smart contract with:
-- Entity registration with configurable fees (0.01 ETH default)
-- Certificate issuance to recipients (0.005 ETH default)
+- Entity registration with configurable fees (0.0001 ETH default)
+- Certificate issuance to recipients (0.00005 ETH default)
 - Certificate revocation functionality with on-chain tracking
 - Public verification system with blockchain proof
 - Fee collection and withdrawal for contract owner
@@ -110,7 +110,7 @@ All requested features have been implemented and optimized:
 ✅ **Register entities requesting documentation** - Any wallet can request verification
 ✅ **Store electronic copy of certificate** - Certificate hash (SHA-256) and image storage
 ✅ **Verify certificate authentication** - Public verification page with blockchain proof
-✅ **Collect fees** - Registration (0.01 ETH) and issuance (0.005 ETH) fees
+✅ **Collect fees** - Registration (0.0001 ETH) and issuance (0.00005 ETH) fees
 ✅ **Control panel for platform management** - Entity dashboard with full certificate management
 ✅ **Works completely locally** - No external services required (Hardhat + SQLite)
 ✅ **Uses tRPC** - Type-safe API throughout with end-to-end type safety
