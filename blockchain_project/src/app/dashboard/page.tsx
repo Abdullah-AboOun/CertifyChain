@@ -62,7 +62,7 @@ export default function DashboardPage() {
     }
   }, [status, router]);
 
-  const { data: entity, refetch: refetchEntity } = api.entity.getMy.useQuery(
+  const { data: entity, refetch: refetchEntity, isLoading: entityLoading } = api.entity.getMy.useQuery(
     undefined,
     {
       enabled: !!session?.user,
@@ -98,7 +98,8 @@ export default function DashboardPage() {
     }
   }, [session?.user?.walletAddress, status]);
 
-  if (status === "loading" || checking) {
+  // Show loading while checking entity status or blockchain registration
+  if (status === "loading" || checking || entityLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="text-primary h-8 w-8 animate-spin" />

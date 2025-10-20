@@ -51,8 +51,13 @@ export default function SignInPage() {
       if (result?.error) {
         setError("Authentication failed. Please try again.");
       } else {
-        // Redirect to dashboard
+        // Add a small delay to ensure session is established
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Redirect to dashboard - the dashboard will handle showing 
+        // the correct view based on entity registration status
         router.push("/dashboard");
+        router.refresh(); // Force a refresh to get the latest data
       }
     } catch (err) {
       console.error("Error connecting wallet:", err);
