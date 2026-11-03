@@ -63,13 +63,13 @@ pnpm prisma generate && pnpm prisma db push
 pnpm dev
 ```
 
-## � Usage
+## 📖 Usage
 
 ### Setup MetaMask
 1. Add Hardhat Local Network
    - RPC: http://localhost:8545
    - Chain ID: 31337
-2. Import test account private key: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+2. Import Hardhat's default test account #0 (a public, well-known key; never use it on a real network): `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 
 ### Issue Certificates
 1. Connect wallet and register entity (0.0001 ETH fee)
@@ -96,7 +96,7 @@ Visit `/verify` and enter certificate ID to verify authenticity
 
 ## 📝 License
 
-MIT License - Free to use and modify
+[MIT](LICENSE)
 
 ---
 
